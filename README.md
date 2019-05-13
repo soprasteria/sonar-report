@@ -31,7 +31,7 @@ sonar-report \
 
 
 # Open in browser
-xdg-open /tmp/sonar-report
+xdg-open /tmp/sonar-report_tomcat8.html
 ```
 
 The report is generated in `/tmp/sonar-report.html`
