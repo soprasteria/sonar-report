@@ -9,7 +9,7 @@
 You need to install [NodeJS](https://nodejs.org/en/) > 7
 
 ```bash
-$ npm install -g git+https://git@github.com/soprasteria/sonar-report.git
+$ sudo npm install -g git+https://git@github.com/soprasteria/sonar-report.git
 $ sonar-report --help
 SYNOPSIS
     sonar-report [OPTION]...
