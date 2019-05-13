@@ -1,11 +1,15 @@
 # sonar-report
+![tomcat8 screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat_1.png "tomcat8 screenshot example")
+
+
+![tomcat8 screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat_2.png "tomcat8 screenshot example")
 
 ## Install
 
 You need to install [NodeJS](https://nodejs.org/en/) > 7
 
 ```bash
-$ sudo npm install -g git+ssh://git@github.com/soprasteria/sonar-report.git
+$ npm install -g git+https://git@github.com/soprasteria/sonar-report.git
 $ sonar-report --help
 SYNOPSIS
     sonar-report [OPTION]...
