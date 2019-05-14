@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 const argv = require("minimist")(process.argv.slice(2));
 const request = require("sync-request");
 const ejs = require("ejs");
@@ -21,16 +22,16 @@ DESCRIPTION
 
     --release
         name of the release, displayed in the header of the generated report
-    
+
     --sonarurl
         base URL of the SonarQube instance to query from
-    
+
     --sonarcomponent
         id of the component to query from
 
     --sonarusername
         auth username
-    
+
     --sonarpassword
         auth password
 
@@ -72,8 +73,7 @@ let cookies;
   if (username && password) {
     const res = request(
       "POST",
-      `${sonarBaseURL}/api/authentication/login`,
-      {
+      `${sonarBaseURL}/api/authentication/login`, {
         body: `login=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -88,7 +88,11 @@ if (data.sinceLeakPeriod) {
   const res = request(
     "GET",
     `${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`,
-    cookies ? { headers: { 'Cookie': cookies } } : undefined
+    cookies ? {
+      headers: {
+        'Cookie': cookies
+      }
+    } : undefined
   );
   const json = JSON.parse(res.getBody());
   data.previousPeriod = json.settings[0].value;
@@ -102,7 +106,11 @@ if (data.sinceLeakPeriod) {
     const res = request(
       "GET",
       `${sonarBaseURL}/api/rules/search?activation=true&types=VULNERABILITY&ps=${pageSize}&p=${page}`,
-      cookies ? { headers: { 'Cookie': cookies } } : undefined
+      cookies ? {
+        headers: {
+          'Cookie': cookies
+        }
+      } : undefined
     );
     page++;
     const json = JSON.parse(res.getBody());
@@ -124,7 +132,11 @@ if (data.sinceLeakPeriod) {
     const res = request(
       "GET",
       `${sonarBaseURL}/api/issues/search?types=VULNERABILITY&componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}`,
-      cookies ? { headers: { 'Cookie': cookies } } : undefined
+      cookies ? {
+        headers: {
+          'Cookie': cookies
+        }
+      } : undefined
     );
     page++;
     const json = JSON.parse(res.getBody());
@@ -141,7 +153,7 @@ if (data.sinceLeakPeriod) {
     }));
   } while (nbResults === pageSize);
 
-  data.issues.sort(function(a,b){
+  data.issues.sort(function (a, b) {
     return severity.get(b.severity) - severity.get(a.severity);
   });
 

@@ -1,0 +1,6 @@
+samples/
+screenshots/
+.travis.yml
+test.js
+sonar-project.properties
+coverage.lcov

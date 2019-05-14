@@ -1,28 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="UTF-8">
 	<title>SonarQube Vulnerability Report</title>
 	<style>
-	/*
+		/*
 	The sss stylesheet is released under the MIT license.
 	<https://github.com/Thiht/sss>
 	*/
-	pre,td,th{padding:5px 10px}code,hr,pre,thead{background:#EEE}body{color:#333;font-family:'Segoe UI','Lucida Grande',Helvetica,sans-serif;line-height:1.5;margin:50px auto;max-width:800px}h1,h2,h3,h4,h5,h6{font-weight:400;line-height:1em;margin:20px 0}h1{font-size:2.25em}h2{font-size:1.75em}h3{font-size:1.5em}h4,h5,h6{font-size:1.25em}a{color:#08C;text-decoration:none}a:focus,a:hover{text-decoration:underline}a:visited{color:#058}img{max-width:100%}li+li{margin-top:3px}dt{font-weight:700}code{font-family:Consolas,"Lucida Console",monospace;padding:1px 5px}pre{white-space:pre-wrap}pre code{padding:0}blockquote{border-left:5px solid #EEE;margin:0;padding:0 10px}table{border-collapse:collapse;width:100%}table+table{margin-top:1em}thead{text-align:left}td,th{border:1px solid #EEE}hr{border:0;height:1px}
+		pre,
+		td,
+		th {
+			padding: 5px 10px
+		}
+
+		code,
+		hr,
+		pre,
+		thead {
+			background: #EEE
+		}
+
+		body {
+			color: #333;
+			font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
+			line-height: 1.5;
+			margin: 50px auto;
+			max-width: 800px
+		}
+
+		h1,
+		h2,
+		h3,
+		h4,
+		h5,
+		h6 {
+			font-weight: 400;
+			line-height: 1em;
+			margin: 20px 0
+		}
+
+		h1 {
+			font-size: 2.25em
+		}
+
+		h2 {
+			font-size: 1.75em
+		}
+
+		h3 {
+			font-size: 1.5em
+		}
+
+		h4,
+		h5,
+		h6 {
+			font-size: 1.25em
+		}
+
+		a {
+			color: #08C;
+			text-decoration: none
+		}
+
+		a:focus,
+		a:hover {
+			text-decoration: underline
+		}
+
+		a:visited {
+			color: #058
+		}
+
+		img {
+			max-width: 100%
+		}
+
+		li+li {
+			margin-top: 3px
+		}
+
+		dt {
+			font-weight: 700
+		}
+
+		code {
+			font-family: Consolas, "Lucida Console", monospace;
+			padding: 1px 5px
+		}
+
+		pre {
+			white-space: pre-wrap
+		}
+
+		pre code {
+			padding: 0
+		}
+
+		blockquote {
+			border-left: 5px solid #EEE;
+			margin: 0;
+			padding: 0 10px
+		}
+
+		table {
+			border-collapse: collapse;
+			width: 100%
+		}
+
+		table+table {
+			margin-top: 1em
+		}
+
+		thead {
+			text-align: left
+		}
+
+		td,
+		th {
+			border: 1px solid #EEE
+		}
+
+		hr {
+			border: 0;
+			height: 1px
+		}
 	</style>
 	<style>
-	.banner {
-		text-align: center;
-	}
-	canvas {
-		display: block;
-		margin: 10px auto;
-	}
+		.banner {
+			text-align: center;
+		}
+
+		canvas {
+			display: block;
+			margin: 10px auto;
+		}
 	</style>
 </head>
+
 <body>
-		<!-- insert your company banner here -->
-		<!--
+	<!-- insert your company banner here -->
+	<!--
 	<p class="banner">
 		<a href="https://www.soprasteria.com/" target="_blank">
 			<img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/02/Sopra_Steria_logo.svg/1280px-Sopra_Steria_logo.svg.png" alt="Sopra Steria" height="50">
@@ -49,7 +168,7 @@
 		<dd><%= deltaAnalysis %></dd>
 
 		<%if (sinceLeakPeriod) { %>
-		
+
 		<dt>Reference period </dt>
 		<dd><%= previousPeriod %></dd>
 
@@ -90,9 +209,9 @@
 	</table>
 
 	<%if (issues.length > 0) { %>
-		
+
 	<canvas id="vulnerabilitiesPieChart" width="200" height="200"></canvas>
-	
+
 
 	<h2>Detail of the Detected Vulnerabilities</h2>
 	<table>
@@ -106,12 +225,12 @@
 		</thead>
 		<tbody>
 			<% for(var i = 0; i < issues.length; i++) { %>
-				<tr>
-					<td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
-					<td><%= issues[i].severity %></td>
-					<td><%= issues[i].description %></td>
-					<td><%= issues[i].message %></td>
-				</tr>
+			<tr>
+				<td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
+				<td><%= issues[i].severity %></td>
+				<td><%= issues[i].description %></td>
+				<td><%= issues[i].message %></td>
+			</tr>
 			<% } %>
 		</tbody>
 	</table>
@@ -128,14 +247,16 @@
 		</thead>
 		<tbody>
 			<% for(var i = 0; i < rules.length; i++) { %>
-				<tr>
-					<td><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= rules[i].key %>"><%= rules[i].key %></a></td>
-					<td>
-						<details>
-							<%- rules[i].htmlDesc %>
-						</details>
-					</td>
-				</tr>
+			<tr>
+				<td><a
+						href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= rules[i].key %>"><%= rules[i].key %></a>
+				</td>
+				<td>
+					<details>
+						<%- rules[i].htmlDesc %>
+					</details>
+				</td>
+			</tr>
 			<% } %>
 		</tbody>
 	</table>
@@ -146,13 +267,13 @@
 		var canvas = document.getElementById("vulnerabilitiesPieChart");
 		var ctx = canvas.getContext("2d");
 
-		var data = [
-			<%= summary.blocker %>,
-			<%= summary.critical %>,
-			<%= summary.major %>,
-			<%= summary.minor %>
+		var data = [ <
+			%= summary.blocker % > , <
+			%= summary.critical % > , <
+			%= summary.major % > , <
+			%= summary.minor % >
 		];
-		var total = data.reduce(function(sum, n) {
+		var total = data.reduce(function (sum, n) {
 			return sum + n;
 		})
 		var colors = ['#2c3e50', '#d43223', '#f39c12', '#319ddb'];
@@ -161,7 +282,8 @@
 			ctx.fillStyle = colors[i];
 			ctx.beginPath();
 			ctx.moveTo(canvas.width / 2, canvas.height / 2);
-			ctx.arc(canvas.width / 2, canvas.height / 2, canvas.height / 2, lastend, lastend + (Math.PI * 2 * (data[i] / total)), false);
+			ctx.arc(canvas.width / 2, canvas.height / 2, canvas.height / 2, lastend, lastend + (Math.PI * 2 * (data[i] /
+				total)), false);
 			ctx.lineTo(canvas.width / 2, canvas.height / 2);
 			ctx.fill();
 			lastend += Math.PI * 2 * (data[i] / total);
@@ -170,4 +292,5 @@
 
 	<% } %>
 </body>
+
 </html>
