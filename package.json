@@ -2,7 +2,7 @@
   "name": "sonar-report",
   "version": "1.0.0",
   "main": "index.js",
-  "author": "Sopra Steria",
+  "author": "Thibaut Rousseau",
   "bin": {
     "sonar-report": "./index.js"
   },
