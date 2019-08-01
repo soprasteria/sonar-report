@@ -55,8 +55,8 @@ More info:
 - In sonarQube, /settings : see leak period
 
 ### allbugs
-- false: only vulnerabilities are exported
-- false: all bugs are exported
+- "false": only vulnerabilities are exported
+- "true": all bugs are exported
 
 ## Develop
 
