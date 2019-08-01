@@ -232,6 +232,7 @@
 					<th>Rule</th>
 					<th>Severity</th>
 					<th>Component</th>
+					<th>Line</th>
 					<th>Description</th>
 					<th>Message</th>
 				</tr>
@@ -242,6 +243,7 @@
 					<td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
 					<td><%= issues[i].severity %></td>
 					<td class="component"><%= issues[i].component %></td>
+					<td><%= issues[i].line %></td>
 					<td><%= issues[i].description %></td>
 					<td><%= issues[i].message %></td>
 				</tr>
