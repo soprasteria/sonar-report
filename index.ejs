@@ -191,7 +191,6 @@
 				<tr>
 					<th></th>
 					<th>Severity</th>
-					<th>Component</th>
 					<th>Number of Issues</th>
 				</tr>
 			</thead>
@@ -231,6 +230,7 @@
 				<tr>
 					<th>Rule</th>
 					<th>Severity</th>
+					<th>Component</th>
 					<th>Description</th>
 					<th>Message</th>
 				</tr>
@@ -281,11 +281,11 @@
 		var canvas = document.getElementById("vulnerabilitiesPieChart");
 		var ctx = canvas.getContext("2d");
 
-		var data = [ <
-			%= summary.blocker % > , <
-			%= summary.critical % > , <
-			%= summary.major % > , <
-			%= summary.minor % >
+		var data = [ 
+			<%= summary.blocker %> ,
+			<%= summary.critical %> ,
+			<%= summary.major %> ,
+			<%= summary.minor %>
 		];
 		var total = data.reduce(function (sum, n) {
 			return sum + n;

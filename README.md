@@ -3,9 +3,9 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=com.soprasteria.cdk%3Asonar-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=com.soprasteria.cdk%3Asonar-report)
 [![Build Status](https://travis-ci.org/soprasteria/sonar-report.svg?branch=master)](https://github.com/soprasteria/sonar-report)
 
-![tomcat8 screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat_1.png "tomcat8 screenshot example")
+![jhipster screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/jhipster1.png "jhipster screenshot example")
 
-![tomcat8 screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat_2.png "tomcat8 screenshot example")
+![jhipster screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/jhipster2.png "jhipster screenshot example")
 
 ## Install
 
@@ -30,7 +30,8 @@ sonar-report \
   --project="Sonar Report" \
   --application="sonar-report" \
   --release="1.0.0" \
-  --sinceleakperiod="false" > /tmp/sonar-report_sonar-report.html
+  --sinceleakperiod="false" \
+  --allbugs="false" > /tmp/sonar-report_sonar-report.html
 
 
 # Open in browser
@@ -52,6 +53,10 @@ More info:
 
 - [Sonar documentation](https://docs.sonarqube.org/latest/user-guide/fixing-the-water-leak/ "leak period")
 - In sonarQube, /settings : see leak period
+
+### allbugs
+- false: only vulnerabilities are exported
+- false: all bugs are exported
 
 ## Develop
 

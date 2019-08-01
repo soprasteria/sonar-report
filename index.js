@@ -38,6 +38,10 @@ DESCRIPTION
     --sinceleakperiod
         flag to indicate if the reporting should be done since the last sonarqube leak period (delta analysis). Default is false.
 
+    --allbugs
+        flag to indicate if the report should contain all bugs, not only vulnerabilities. Default is false
+
+
     --help
         display this help message`);
   process.exit();
@@ -56,6 +60,7 @@ const data = {
   releaseName: argv.release,
   sinceLeakPeriod: (argv.sinceleakperiod == 'true'),
   previousPeriod: '',
+  allBugs: (argv.allbugs == 'true'),
   sonarBaseURL: argv.sonarurl,
   rules: [],
   issues: []
@@ -66,6 +71,13 @@ data.deltaAnalysis = data.sinceLeakPeriod ? 'Yes' : 'No';
 const sonarBaseURL = data.sonarBaseURL;
 const sonarComponent = argv.sonarcomponent;
 let cookies;
+
+// Filter to get only vulnerabilites
+const DEFAULT_FILTER="&types=VULNERABILITY"
+let filter = DEFAULT_FILTER;
+if(data.allBugs){
+  filter = "";
+}
 
 {
   const username = argv.sonarusername;
@@ -102,10 +114,11 @@ if (data.sinceLeakPeriod) {
   const pageSize = 500;
   let page = 1;
   let nbResults;
+
   do {
     const res = request(
       "GET",
-      `${sonarBaseURL}/api/rules/search?activation=true&types=VULNERABILITY&ps=${pageSize}&p=${page}`,
+      `${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filter}`,
       cookies ? {
         headers: {
           'Cookie': cookies
@@ -131,7 +144,7 @@ if (data.sinceLeakPeriod) {
   do {
     const res = request(
       "GET",
-      `${sonarBaseURL}/api/issues/search?types=VULNERABILITY&componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}`,
+      `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}${filter}`,
       cookies ? {
         headers: {
           'Cookie': cookies
