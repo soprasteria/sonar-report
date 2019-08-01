@@ -35,6 +35,9 @@ DESCRIPTION
     --sonarpassword
         auth password
 
+    --sonartoken
+        auth token
+
     --sinceleakperiod
         flag to indicate if the reporting should be done since the last sonarqube leak period (delta analysis). Default is false.
 
@@ -70,7 +73,7 @@ const leakPeriodFilter = data.sinceLeakPeriod ? '&sinceLeakPeriod=true' : '';
 data.deltaAnalysis = data.sinceLeakPeriod ? 'Yes' : 'No';
 const sonarBaseURL = data.sonarBaseURL;
 const sonarComponent = argv.sonarcomponent;
-let cookies;
+const options = { headers: {} };
 
 // Filter to get only vulnerabilites
 const DEFAULT_FILTER="&types=VULNERABILITY"
@@ -82,7 +85,9 @@ if(data.allBugs){
 {
   const username = argv.sonarusername;
   const password = argv.sonarpassword;
+  const token = argv.sonartoken;
   if (username && password) {
+    // Form authentication with username/password
     const res = request(
       "POST",
       `${sonarBaseURL}/api/authentication/login`, {
@@ -92,7 +97,10 @@ if(data.allBugs){
         }
       }
     );
-    cookies = res.headers['set-cookie'].map(cookie => cookie.split(';')[0]).join('; ');
+    options.headers["Cookie"] = res.headers['set-cookie'].map(cookie => cookie.split(';')[0]).join('; ');
+  } else if (token) {
+    // Basic authentication with user token
+    options.headers["Authorization"] = "Basic " + Buffer.from(token + ":").toString("base64");
   }
 }
 
@@ -100,11 +108,7 @@ if (data.sinceLeakPeriod) {
   const res = request(
     "GET",
     `${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`,
-    cookies ? {
-      headers: {
-        'Cookie': cookies
-      }
-    } : undefined
+    options
   );
   const json = JSON.parse(res.getBody());
   data.previousPeriod = json.settings[0].value;
@@ -119,11 +123,7 @@ if (data.sinceLeakPeriod) {
     const res = request(
       "GET",
       `${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filter}`,
-      cookies ? {
-        headers: {
-          'Cookie': cookies
-        }
-      } : undefined
+      options
     );
     page++;
     const json = JSON.parse(res.getBody());
@@ -145,11 +145,7 @@ if (data.sinceLeakPeriod) {
     const res = request(
       "GET",
       `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}${filter}`,
-      cookies ? {
-        headers: {
-          'Cookie': cookies
-        }
-      } : undefined
+      options
     );
     page++;
     const json = JSON.parse(res.getBody());
