@@ -219,11 +219,12 @@
 		</table>
 
 		<%if (issues.length > 0) { %>
-
 		<canvas id="vulnerabilitiesPieChart" width="200" height="200"></canvas>
+		<% } %>
 	</div>
 
 	<div class=detail>
+		<%if (issues.length > 0) { %>
 		<h2>Detail of the Detected Vulnerabilities</h2>
 		<table>
 			<thead>
