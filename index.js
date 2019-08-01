@@ -147,6 +147,7 @@ if (data.sinceLeakPeriod) {
       return {
         rule: issue.rule,
         severity: issue.severity,
+        component: issue.component,
         description: message,
         message: issue.message
       };
