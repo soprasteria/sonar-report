@@ -3,9 +3,9 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=com.soprasteria.cdk%3Asonar-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=com.soprasteria.cdk%3Asonar-report)
 [![Build Status](https://travis-ci.org/soprasteria/sonar-report.svg?branch=master)](https://github.com/soprasteria/sonar-report)
 
-![jhipster screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/jhipster1.png "jhipster screenshot example")
+![tomcat screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat1.png "tomcat screenshot example")
 
-![jhipster screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/jhipster2.png "jhipster screenshot example")
+![tomcat screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat2.png "tomcat screenshot example")
 
 ## Install
 
