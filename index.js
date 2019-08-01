@@ -105,7 +105,7 @@ if (data.sinceLeakPeriod) {
   do {
     const res = request(
       "GET",
-      `${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}`,
+      `${sonarBaseURL}/api/rules/search?activation=true&types=VULNERABILITY&ps=${pageSize}&p=${page}`,
       cookies ? {
         headers: {
           'Cookie': cookies
@@ -131,7 +131,7 @@ if (data.sinceLeakPeriod) {
   do {
     const res = request(
       "GET",
-      `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}`,
+      `${sonarBaseURL}/api/issues/search?types=VULNERABILITY&componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}`,
       cookies ? {
         headers: {
           'Cookie': cookies
