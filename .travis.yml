@@ -12,7 +12,7 @@ install:
 - npm install
 script:
 - npm test
-- sonar-scanner
+- node index.js --help
 deploy:
   provider: npm
   email: konstantin.sidorenko@orange.fr
