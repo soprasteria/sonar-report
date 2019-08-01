@@ -26,8 +26,14 @@
 			color: #333;
 			font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
 			line-height: 1.5;
+		}
+
+		div.summup {
+			max-width: 800px;
 			margin: 50px auto;
-			max-width: 800px
+		}
+		div.detail {
+			padding: 20px;
 		}
 
 		h1,
@@ -121,6 +127,9 @@
 		th {
 			border: 1px solid #EEE
 		}
+		td.component{
+			word-break: break-all;
+		}
 
 		hr {
 			border: 0;
@@ -140,126 +149,131 @@
 </head>
 
 <body>
-	<!-- insert your company banner here -->
-	<!--
-	<p class="banner">
-		<a href="https://www.soprasteria.com/" target="_blank">
-			<img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/02/Sopra_Steria_logo.svg/1280px-Sopra_Steria_logo.svg.png" alt="Sopra Steria" height="50">
-		</a>
-	</p>
-	-->
+	<div class=summup>
+		<!-- insert your company banner here -->
+		<!--
+		<p class="banner">
+			<a href="https://www.soprasteria.com/" target="_blank">
+				<img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/02/Sopra_Steria_logo.svg/1280px-Sopra_Steria_logo.svg.png" alt="Sopra Steria" height="50">
+			</a>
+		</p>
+		-->
 
-	<h1>SonarQube Vulnerability Report</h1>
+		<h1>SonarQube Vulnerability Report</h1>
 
-	<dl>
-		<dt>Report Generated On</dt>
-		<dd><%= date %></dd>
+		<dl>
+			<dt>Report Generated On</dt>
+			<dd><%= date %></dd>
 
-		<dt>Project Name</dt>
-		<dd><%= projectName %></dd>
+			<dt>Project Name</dt>
+			<dd><%= projectName %></dd>
 
-		<dt>Application</dt>
-		<dd><%= applicationName %></dd>
+			<dt>Application</dt>
+			<dd><%= applicationName %></dd>
 
-		<dt>Release</dt>
-		<dd><%= releaseName %></dd>
+			<dt>Release</dt>
+			<dd><%= releaseName %></dd>
 
-		<dt>Delta analysis</dt>
-		<dd><%= deltaAnalysis %></dd>
+			<dt>Delta analysis</dt>
+			<dd><%= deltaAnalysis %></dd>
 
-		<%if (sinceLeakPeriod) { %>
+			<%if (sinceLeakPeriod) { %>
 
-		<dt>Reference period </dt>
-		<dd><%= previousPeriod %></dd>
+			<dt>Reference period </dt>
+			<dd><%= previousPeriod %></dd>
+
+			<% } %>
+		</dl>
+
+		<h2>Summary of the Detected Vulnerabilities</h2>
+		<table>
+			<thead>
+				<tr>
+					<th></th>
+					<th>Severity</th>
+					<th>Component</th>
+					<th>Number of Issues</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td style="background-color:#2c3e50"></td>
+					<td>BLOCKER</td>
+					<td><%= summary.blocker %></td>
+				</tr>
+				<tr>
+					<td style="background-color: #d43223"></td>
+					<td>CRITICAL</td>
+					<td><%= summary.critical %></td>
+				</tr>
+				<tr>
+					<td style="background-color: #f39c12"></td>
+					<td>MAJOR</td>
+					<td><%= summary.major %></td>
+				</tr>
+				<tr>
+					<td style="background-color: #319ddb"></td>
+					<td>MINOR</td>
+					<td><%= summary.minor %></td>
+				</tr>
+			</tbody>
+		</table>
+
+		<%if (issues.length > 0) { %>
+
+		<canvas id="vulnerabilitiesPieChart" width="200" height="200"></canvas>
+	</div>
+
+	<div class=detail>
+		<h2>Detail of the Detected Vulnerabilities</h2>
+		<table>
+			<thead>
+				<tr>
+					<th>Rule</th>
+					<th>Severity</th>
+					<th>Description</th>
+					<th>Message</th>
+				</tr>
+			</thead>
+			<tbody>
+				<% for(var i = 0; i < issues.length; i++) { %>
+				<tr>
+					<td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
+					<td><%= issues[i].severity %></td>
+					<td class="component"><%= issues[i].component %></td>
+					<td><%= issues[i].description %></td>
+					<td><%= issues[i].message %></td>
+				</tr>
+				<% } %>
+			</tbody>
+		</table>
 
 		<% } %>
-	</dl>
 
-	<h2>Summary of the Detected Vulnerabilities</h2>
-	<table>
-		<thead>
-			<tr>
-				<th></th>
-				<th>Severity</th>
-				<th>Number of Issues</th>
-			</tr>
-		</thead>
-		<tbody>
-			<tr>
-				<td style="background-color:#2c3e50"></td>
-				<td>BLOCKER</td>
-				<td><%= summary.blocker %></td>
-			</tr>
-			<tr>
-				<td style="background-color: #d43223"></td>
-				<td>CRITICAL</td>
-				<td><%= summary.critical %></td>
-			</tr>
-			<tr>
-				<td style="background-color: #f39c12"></td>
-				<td>MAJOR</td>
-				<td><%= summary.major %></td>
-			</tr>
-			<tr>
-				<td style="background-color: #319ddb"></td>
-				<td>MINOR</td>
-				<td><%= summary.minor %></td>
-			</tr>
-		</tbody>
-	</table>
-
-	<%if (issues.length > 0) { %>
-
-	<canvas id="vulnerabilitiesPieChart" width="200" height="200"></canvas>
-
-
-	<h2>Detail of the Detected Vulnerabilities</h2>
-	<table>
-		<thead>
-			<tr>
-				<th>Rule</th>
-				<th>Severity</th>
-				<th>Description</th>
-				<th>Message</th>
-			</tr>
-		</thead>
-		<tbody>
-			<% for(var i = 0; i < issues.length; i++) { %>
-			<tr>
-				<td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
-				<td><%= issues[i].severity %></td>
-				<td><%= issues[i].description %></td>
-				<td><%= issues[i].message %></td>
-			</tr>
-			<% } %>
-		</tbody>
-	</table>
-
-	<% } %>
-
-	<h3>Known Security Rules</h3>
-	<table style="table-layout: fixed; word-wrap: break-word">
-		<thead>
-			<tr>
-				<th>Rule</th>
-				<th>Description</th>
-			</tr>
-		</thead>
-		<tbody>
-			<% for(var i = 0; i < rules.length; i++) { %>
-			<tr>
-				<td><a
-						href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= rules[i].key %>"><%= rules[i].key %></a>
-				</td>
-				<td>
-					<details>
-						<%- rules[i].htmlDesc %>
-					</details>
-				</td>
-			</tr>
-			<% } %>
-		</tbody>
-	</table>
+		<h3>Known Security Rules</h3>
+		<table style="table-layout: fixed; word-wrap: break-word">
+			<thead>
+				<tr>
+					<th>Rule</th>
+					<th>Description</th>
+				</tr>
+			</thead>
+			<tbody>
+				<% for(var i = 0; i < rules.length; i++) { %>
+				<tr>
+					<td><a
+							href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= rules[i].key %>"><%= rules[i].key %></a>
+					</td>
+					<td>
+						<details>
+							<%- rules[i].htmlDesc %>
+						</details>
+					</td>
+				</tr>
+				<% } %>
+			</tbody>
+		</table>
+	</div>
 
 	<%if (issues.length > 0) { %>
 
