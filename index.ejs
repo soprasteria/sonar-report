@@ -235,6 +235,7 @@
 					<th>Line</th>
 					<th>Description</th>
 					<th>Message</th>
+					<th style="display:none;">Key</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -246,6 +247,7 @@
 					<td><%= issues[i].line %></td>
 					<td><%= issues[i].description %></td>
 					<td><%= issues[i].message %></td>
+					<td style="display:none;"><%= issues[i].key %></td>
 				</tr>
 				<% } %>
 			</tbody>
