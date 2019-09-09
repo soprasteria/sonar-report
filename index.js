@@ -156,10 +156,12 @@ if (data.sinceLeakPeriod) {
       return {
         rule: issue.rule,
         severity: issue.severity,
-        component: issue.component,
+        // Take only filename with path, without project name
+        component: issue.component.split(':').pop(),
         line: issue.line,
         description: message,
-        message: issue.message
+        message: issue.message,
+        key: issue.key
       };
     }));
   } while (nbResults === pageSize);
