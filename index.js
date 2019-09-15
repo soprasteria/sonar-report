@@ -45,6 +45,12 @@ DESCRIPTION
         flag to indicate if the report should contain all bugs, not only vulnerabilities. Default is false
 
 
+    --fixMissingRule
+        Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true. Default is false
+
+    --noSecurityHotspot
+        Set this flag for old versions of sonarQube without security hotspots (<7.3?). Default is false
+
     --help
         display this help message`);
   process.exit();
@@ -64,6 +70,8 @@ const data = {
   sinceLeakPeriod: (argv.sinceleakperiod == 'true'),
   previousPeriod: '',
   allBugs: (argv.allbugs == 'true'),
+  fixMissingRule: (argv.fixMissingRule == 'true'),
+  noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
   sonarBaseURL: argv.sonarurl,
   rules: [],
   issues: []
@@ -75,11 +83,27 @@ const sonarBaseURL = data.sonarBaseURL;
 const sonarComponent = argv.sonarcomponent;
 const options = { headers: {} };
 
-// Filter to get only vulnerabilites
-const DEFAULT_FILTER="&types=VULNERABILITY"
-let filter = DEFAULT_FILTER;
+let DEFAULT_FILTER="";
+// Default filter gets only vulnerabilities
+if(data.noSecurityHotspot){
+  // For old versions of sonarQube (sonarQube won't accept filtering on a type that doesn't exist and will give HTTP 400 {"errors":[{"msg":"Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]})
+  DEFAULT_FILTER="&types=VULNERABILITY"
+}
+else{
+  // For newer versions of sonar, rules and issues may be of type VULNERABILITY or SECURITY_HOTSPOT
+  DEFAULT_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
+}
+
+let filterRule = DEFAULT_FILTER;
+let filterIssue = DEFAULT_FILTER;
+
 if(data.allBugs){
-  filter = "";
+  filterRule = "";
+  filterIssue = "";
+}
+
+if(data.fixMissingRule){
+  filterRule = "";
 }
 
 {
@@ -122,7 +146,7 @@ if (data.sinceLeakPeriod) {
   do {
     const res = request(
       "GET",
-      `${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filter}`,
+      `${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filterRule}`,
       options
     );
     page++;
@@ -144,7 +168,7 @@ if (data.sinceLeakPeriod) {
   do {
     const res = request(
       "GET",
-      `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}${filter}`,
+      `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}`,
       options
     );
     page++;

@@ -60,6 +60,18 @@ More info:
 - "false": only vulnerabilities are exported
 - "true": all bugs are exported
 
+### fixMissingRule
+On some versions of sonar (found on 6.5), the `type` of issue and the `type` of the rule don't match (for example `VULNERABILITY` vs `CODE_SMELL` ). 
+
+In this case, when `allbugs=false`, it's possible that the issue is extracted but not it's rule. What will happen is that the issue has `/` in the description (because the description is the name of the rule).
+
+To circumvent this issue, the fixMissingRule will extract all rules without any filter on the `type`. 
+
+Beware that, with this parameter activated, all the issues linked to the rules displayed may not be displayed. 
+
+### noSecurityHotspot
+Set this flag to true if using a sonarQube version that doesn't support security hotspots (<7.3?)
+
 ## Develop
 
 Get the dependencies:
@@ -69,3 +81,13 @@ npm install
 ```
 
 Run with the same command as [Use](#use) but use `node index.js` instead of `sonar-report`
+
+## Troubleshooting
+
+- The description is "/"
+
+Set `fixMissingRule` to true
+
+- Error "Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]}
+
+Your version of sonarQube doesn't support security hotspots. Set `noSecurityHotspot` to true.
