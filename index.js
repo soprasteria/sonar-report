@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+//test
 
 const argv = require("minimist")(process.argv.slice(2));
 const request = require("sync-request");
