@@ -1,7 +1,9 @@
 # sonar-report
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=com.soprasteria.cdk%3Asonar-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=com.soprasteria.cdk%3Asonar-report)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=soprasteria_sonar-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=soprasteria_sonar-report)
 [![Build Status](https://travis-ci.org/soprasteria/sonar-report.svg?branch=master)](https://github.com/soprasteria/sonar-report)
+[![Dependencies](https://david-dm.org/soprasteria/sonar-report/status.svg?path=client)](https://david-dm.org/soprasteria/sonar-report?path=client&view=list)
+[![Dev Dependencies](https://david-dm.org/soprasteria/sonar-report/dev-status.svg?path=client)](https://david-dm.org/soprasteria/sonar-report?path=client&type=dev&view=list)
 
 ![tomcat screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat1.png "tomcat screenshot example")
 
@@ -26,7 +28,7 @@ SYNOPSIS
 # Generate report example
 sonar-report \
   --sonarurl="https://sonarcloud.io" \
-  --sonarcomponent="com.soprasteria:sonar-report" \
+  --sonarcomponent="sopra-steria:soprasteria_sonar-report" \
   --project="Sonar Report" \
   --application="sonar-report" \
   --release="1.0.0" \
