@@ -5,13 +5,13 @@
 [![Dependencies](https://david-dm.org/soprasteria/sonar-report/status.svg?path=client)](https://david-dm.org/soprasteria/sonar-report?path=client&view=list)
 [![Dev Dependencies](https://david-dm.org/soprasteria/sonar-report/dev-status.svg?path=client)](https://david-dm.org/soprasteria/sonar-report?path=client&type=dev&view=list)
 
-![tomcat screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat1.png "tomcat screenshot example")
+![tomcat screenshot example](screenshots/tomcat1.png "tomcat screenshot example")
 
-![tomcat screenshot example](https://github.com/soprasteria/sonar-report/raw/master/screenshots/tomcat2.png "tomcat screenshot example")
+![tomcat screenshot example](screenshots/tomcat2.png "tomcat screenshot example")
 
 ## Install
 
-You need to install [NodeJS](https://nodejs.org/en/) > 7
+You need to install [NodeJS](https://nodejs.org/en/) 8 or 10 (node 12 is not supported to date)
 
 ```bash
 $ npm install -g sonar-report
@@ -91,3 +91,11 @@ Set `fixMissingRule` to true
 - Error "Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]}
 
 Your version of sonarQube doesn't support security hotspots. Set `noSecurityHotspot` to true.
+
+- {"errors":[{"msg":"Can return only the first 10000 results. 10500th result asked."}]}
+
+This is a limitation in sonarQube API. There is no way around it to date apart from adding limiting filters
+
+Try removing `--allbugs=true` or tune the query in index.js (see /web_api/api/issues under your sonarQube instance)
+
+See also this discussion https://community.sonarsource.com/t/cannot-get-more-than-10000-results-through-web-api/3662/4

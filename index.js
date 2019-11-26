@@ -88,14 +88,18 @@ const withOrganization = data.sonarOrganization ? `&organization=${data.sonarOrg
 const options = { headers: {} };
 
 let DEFAULT_FILTER="";
+let OPEN_STATUSES="";
 // Default filter gets only vulnerabilities
 if(data.noSecurityHotspot){
   // For old versions of sonarQube (sonarQube won't accept filtering on a type that doesn't exist and will give HTTP 400 {"errors":[{"msg":"Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]})
   DEFAULT_FILTER="&types=VULNERABILITY"
+  OPEN_STATUSES="OPEN,CONFIRMED,REOPENED"
 }
 else{
   // For newer versions of sonar, rules and issues may be of type VULNERABILITY or SECURITY_HOTSPOT
   DEFAULT_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
+  // the security hotspot adds TO_REVIEW,IN_REVIEW
+  OPEN_STATUSES="OPEN,CONFIRMED,REOPENED,TO_REVIEW,IN_REVIEW"
 }
 
 let filterRule = DEFAULT_FILTER;
@@ -159,7 +163,8 @@ if (data.sinceLeakPeriod) {
     data.rules = data.rules.concat(json.rules.map(rule => ({
       key: rule.key,
       htmlDesc: rule.htmlDesc,
-      name: rule.name
+      name: rule.name,
+      severity: rule.severity
     })));
   } while (nbResults === pageSize);
 
@@ -170,9 +175,21 @@ if (data.sinceLeakPeriod) {
   let page = 1;
   let nbResults;
   do {
+    /** Get all statuses except "REVIEWED". 
+     * Actions in sonarQube vs status in security hotspot (sonar >= 7): 
+     * - resolve as reviewed
+     *    "resolution": "FIXED"
+     *    "status": "REVIEWED"
+     * - open as vulnerability
+     *    "status": "OPEN"
+     * - set as in review
+     *    "status": "IN_REVIEW"
+     */
+    let query = `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${OPEN_STATUSES}&resolutions=&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`
+    //console.log(query)
     const res = request(
       "GET",
-      `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`,
+      query,
       options
     );
     page++;
@@ -183,7 +200,10 @@ if (data.sinceLeakPeriod) {
       const message = rule ? rule.name : "/";
       return {
         rule: issue.rule,
-        severity: issue.severity,
+        // For security hotspots, the vulnerabilities show without a severity before they are confirmed
+        // In this case, get the severity from the rule
+        severity: (typeof issue.severity !== 'undefined') ? issue.severity : rule.severity,
+        status: issue.status,
         // Take only filename with path, without project name
         component: issue.component.split(':').pop(),
         line: issue.line,
