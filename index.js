@@ -38,12 +38,14 @@ DESCRIPTION
     --sonartoken
         auth token
 
+    --sonarorganization
+        name of the sonarcloud.io organization
+
     --sinceleakperiod
         flag to indicate if the reporting should be done since the last sonarqube leak period (delta analysis). Default is false.
 
     --allbugs
         flag to indicate if the report should contain all bugs, not only vulnerabilities. Default is false
-
 
     --fixMissingRule
         Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true. Default is false
@@ -73,6 +75,7 @@ const data = {
   fixMissingRule: (argv.fixMissingRule == 'true'),
   noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
   sonarBaseURL: argv.sonarurl,
+  sonarOrganization: argv.sonarorganization,
   rules: [],
   issues: []
 };
@@ -81,6 +84,7 @@ const leakPeriodFilter = data.sinceLeakPeriod ? '&sinceLeakPeriod=true' : '';
 data.deltaAnalysis = data.sinceLeakPeriod ? 'Yes' : 'No';
 const sonarBaseURL = data.sonarBaseURL;
 const sonarComponent = argv.sonarcomponent;
+const withOrganization = data.sonarOrganization ? `&organization=${data.sonarOrganization}` : '';
 const options = { headers: {} };
 
 let DEFAULT_FILTER="";
@@ -168,7 +172,7 @@ if (data.sinceLeakPeriod) {
   do {
     const res = request(
       "GET",
-      `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}`,
+      `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=OPEN,CONFIRMED,REOPENED&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`,
       options
     );
     page++;
