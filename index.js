@@ -95,7 +95,7 @@ if(data.noSecurityHotspot){
 }
 else{
   // For newer versions of sonar, rules and issues may be of type VULNERABILITY or SECURITY_HOTSPOT
-  DEFAULT_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT,BUG,CODE_SMELL"
+  DEFAULT_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
 }
 
 let filterRule = DEFAULT_FILTER;
