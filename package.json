@@ -10,7 +10,7 @@
     "test": "mocha -R mocha-lcov-reporter > coverage.lcov"
   },
   "dependencies": {
-    "ejs": "^2.7.1",
+    "ejs": "^3.0.1",
     "minimist": "^1.2.0",
     "sync-request": "^6.1.0"
   },
