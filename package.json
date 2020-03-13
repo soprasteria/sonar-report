@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "ejs": "^2.7.1",
-    "minimist": "^1.2.0",
+    "minimist": "^1.2.5",
     "sync-request": "^6.1.0"
   },
   "devDependencies": {
