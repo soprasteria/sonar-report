@@ -74,7 +74,8 @@ const data = {
   allBugs: (argv.allbugs == 'true'),
   fixMissingRule: (argv.fixMissingRule == 'true'),
   noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
-  sonarBaseURL: argv.sonarurl,
+  // sonar URL without trailing /
+  sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
   sonarOrganization: argv.sonarorganization,
   rules: [],
   issues: []
