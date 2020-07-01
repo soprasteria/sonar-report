@@ -32,6 +32,7 @@ sonar-report \
   --project="Sonar Report" \
   --application="sonar-report" \
   --release="1.0.0" \
+  --branch="feature/branch" \
   --sinceleakperiod="false" \
   --allbugs="false" > /tmp/sonar-report_sonar-report.html
 
