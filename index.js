@@ -23,6 +23,9 @@ DESCRIPTION
     --release
         name of the release, displayed in the header of the generated report
 
+    --branch
+        Branch in Sonarqube that we want to get the issues for
+
     --sonarurl
         base URL of the SonarQube instance to query from
 
@@ -69,6 +72,7 @@ const data = {
   projectName: argv.project,
   applicationName: argv.application,
   releaseName: argv.release,
+  branch: argv.branch,
   sinceLeakPeriod: (argv.sinceleakperiod == 'true'),
   previousPeriod: '',
   allBugs: (argv.allbugs == 'true'),
@@ -103,12 +107,17 @@ else{
   OPEN_STATUSES="OPEN,CONFIRMED,REOPENED,TO_REVIEW,IN_REVIEW"
 }
 
+// filters for getting rules and issues
 let filterRule = DEFAULT_FILTER;
 let filterIssue = DEFAULT_FILTER;
 
 if(data.allBugs){
   filterRule = "";
   filterIssue = "";
+}
+
+if(data.branch){
+  filterIssue=filterIssue + "&branch=" + data.branch
 }
 
 if(data.fixMissingRule){
