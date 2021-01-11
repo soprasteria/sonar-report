@@ -65,6 +65,18 @@ DESCRIPTION
   process.exit();
 }
 
+function logError(context, error){
+  var errorCode = (typeof error.code === 'undefined' || error.code === null) ? "" : error.code;
+  var errorMessage = (typeof error.message === 'undefined' || error.message === null) ? "" : error.message;
+  var errorResponseStatusCode = (typeof error.response === 'undefined' || error.response === null || error.response.statusCode === 'undefined' || error.response.statusCode === null ) ? "" : error.response.statusCode;
+  var errorResponseStatusMessage = (typeof error.response === 'undefined' || error.response === null || error.response.statusMessage === 'undefined' || error.response.statusMessage === null ) ? "" : error.response.statusMessage;
+  var errorResponseBody = (typeof error.response === 'undefined' || error.response === null || error.response.body === 'undefined' || error.response.body === null ) ? "" : error.response.body;
+
+  console.error(
+    "Error while %s : %s - %s - %s - %s - %s", 
+    context, errorCode, errorMessage, errorResponseStatusCode, errorResponseStatusMessage,  errorResponseBody);  
+}
+
 (async () => {
   var severity = new Map();
   severity.set('MINOR', 0);
@@ -138,7 +150,7 @@ DESCRIPTION
     var url = new URL(proxy);
     var proxyHost = url.hostname;
     var proxyPort = url.port;
-    console.error('using proxy %j:%j', proxyHost, proxyPort);
+    console.error('using proxy %s:%s', proxyHost, proxyPort);
     agent = {
       https: tunnel.httpsOverHttp({
           proxy: {
@@ -168,7 +180,7 @@ DESCRIPTION
       });
       headers["Cookie"] = response.headers['set-cookie'].map(cookie => cookie.split(';')[0]).join('; ');
     } catch (error) {
-        console.error("Error while logging in: " + error.response.statusCode + "-" + error.response.statusMessage + "-" + error.response.body);
+        logError("while logging in", error);
         return null;
     }
     
@@ -208,7 +220,7 @@ DESCRIPTION
           severity: rule.severity
           })));
       } catch (error) {
-          console.error("Error while getting rules: " + error.response.statusCode + "-" + error.response.statusMessage + "-" + error.response.body);
+          logError("while getting rules", error);
           return null;
       }
     } while (nbResults === pageSize);
@@ -255,7 +267,7 @@ DESCRIPTION
               };
             }));
         } catch (error) {
-            console.error("Error while getting issues: " + error.response.statusCode + "-" + error.response.statusMessage + "-" + error.response.body + "-" + error.response.body);
+          logError("while getting issues", error);  
             return null;
         }
       } while (nbResults === pageSize);
