@@ -11,19 +11,26 @@
 
 ## Install
 
-You need to install [NodeJS](https://nodejs.org/en/) 8 or 10 (node 12 is not supported to date)
+Compatible with node 10+ (tested with node 10 -> 14)
 
 ```bash
 $ npm install -g sonar-report
-$ sonar-report --help
-SYNOPSIS
-    sonar-report [OPTION]...
-
-...
 ```
 
 ## Use
+- See all options with:
+```
+$ sonar-report --help
+SYNOPSIS
+    sonar-report [OPTION]...
+```
+- Environment: 
+  - http_proxy : the proxy to use to reach the sonarqube instance (`http://<host>:<port>`)
+  - NODE_EXTRA_CA_CERTS
+    - the custom certificate authority to trust (troubleshoots `Unable to verify the first certificate`) 
+    - the variable holds a file name that contains the certificate in pem format (root CA or full trust chain)
 
+- Example:
 ```bash
 # Generate report example
 sonar-report \
@@ -41,8 +48,7 @@ sonar-report \
 xdg-open /tmp/sonar-report_sonar-report.html
 ```
 
-The report is generated in `/tmp/sonar-report.html`
-
+## Some parameters explained
 ### sinceleakperiod
 
 The `sinceleakperiod` parameter activates delta analysis. If `true`, sonar-report will only get the vulnerabilities that were added since a fixed date/version or for a number of days. For this it will:
