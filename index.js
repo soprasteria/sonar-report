@@ -108,11 +108,21 @@ function logError(context, error){
   const sonarComponent = argv.sonarcomponent;
   const withOrganization = data.sonarOrganization ? `&organization=${data.sonarOrganization}` : '';
   var headers = {};
+  var version = null;
+  
+  {
+    const res = request(
+      "GET",
+      `${sonarBaseURL}/api/system/status`
+    );
+    const json = JSON.parse(res.getBody());
+    version = json.version;
+  }
 
   let DEFAULT_FILTER="";
   let OPEN_STATUSES="";
   // Default filter gets only vulnerabilities
-  if(data.noSecurityHotspot){
+  if(data.noSecurityHotspot || version >= "8.0" || version < "7.0"){
     // For old versions of sonarQube (sonarQube won't accept filtering on a type that doesn't exist and will give HTTP 400 {"errors":[{"msg":"Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]})
     DEFAULT_FILTER="&types=VULNERABILITY"
     OPEN_STATUSES="OPEN,CONFIRMED,REOPENED"
