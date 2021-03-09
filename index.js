@@ -281,7 +281,39 @@ function logError(context, error){
             return null;
         }
       } while (nbResults === pageSize);
-  
+
+   {
+    const pageSize = 500;
+    let page = 1;
+    let nbResults;
+      do {
+        try {
+            const response = await got(`${sonarBaseURL}/api/issues/search?projectKey=${projectName}&statuses=TO_REVIEW`, {
+                agent,
+                headers
+            });
+            page++;
+            const json = JSON.parse(response.body);
+            nbResults = json.hotspots.length;
+            data.issues = data.issues.concat(json.hotspots.map(hotspot => {
+              return {
+                rule: undefined,
+                severity: hotspot.vulnerabilityProbability,
+                status: hotspot.status,
+                // Take only filename with path, without project name
+                component: hotspot.component.split(':').pop(),
+                line: hotspot.line,
+                description: "",
+                message: hotspot.message,
+                key: hotspot.key
+              };
+            }));
+        } catch (error) {
+          logError("while getting hotspots", error);  
+            return null;
+        }
+      } while (nbResults === pageSize);
+
     data.issues.sort(function (a, b) {
       return severity.get(b.severity) - severity.get(a.severity);
     });
