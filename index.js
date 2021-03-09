@@ -282,11 +282,7 @@ function logError(context, error){
         }
       } while (nbResults === pageSize);
 
-   {
-    const pageSize = 500;
-    let page = 1;
-    let nbResults;
-      do {
+    do {
         try {
             const response = await got(`${sonarBaseURL}/api/issues/search?projectKey=${projectName}&statuses=TO_REVIEW`, {
                 agent,
