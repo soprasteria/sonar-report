@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const argv = require("minimist")(process.argv.slice(2));
 const got = require('got');
+const request = require('sync-request');
 const tunnel = require('tunnel');
 const ejs = require("ejs");
 
@@ -282,9 +283,10 @@ function logError(context, error){
         }
       } while (nbResults === pageSize);
 
-    do {
+    if (version >= "8.0" && !data.noSecurityHotspot) {
+      do {
         try {
-            const response = await got(`${sonarBaseURL}/api/issues/search?projectKey=${projectName}&statuses=TO_REVIEW`, {
+            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${data.projectName}&ps=${pageSize}&p=${page}&statuses=TO_REVIEW`, {
                 agent,
                 headers
             });
@@ -309,6 +311,7 @@ function logError(context, error){
             return null;
         }
       } while (nbResults === pageSize);
+    }
 
     data.issues.sort(function (a, b) {
       return severity.get(b.severity) - severity.get(a.severity);
