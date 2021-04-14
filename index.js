@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const argv = require("minimist")(process.argv.slice(2));
 const got = require('got');
-const request = require('sync-request');
 const tunnel = require('tunnel');
 const ejs = require("ejs");
 
@@ -111,11 +110,35 @@ function logError(context, error){
   var headers = {};
   var version = null;
   
+  var proxy = null;
+  // the tunnel agent if a forward proxy is required, or remains null
+  var agent = null;
+  // Preparing configuration if behind proxy
+  if (process.env.http_proxy){
+    proxy = process.env.http_proxy;
+    var url = new URL(proxy);
+    var proxyHost = url.hostname;
+    var proxyPort = url.port;
+    console.error('using proxy %s:%s', proxyHost, proxyPort);
+    agent = {
+      https: tunnel.httpsOverHttp({
+          proxy: {
+              host: proxyHost,
+              port: proxyPort
+          }
+      })
+    };
+  }
+  else{
+    console.error('No proxy configuration detected');
+  }
+  
+  //get SonarQube version
   {
-    const res = request(
-      "GET",
-      `${sonarBaseURL}/api/system/status`
-    );
+    const res = await got(`${sonarBaseURL}/api/system/status`, {
+      agent,
+      headers
+    });
     const json = JSON.parse(res.getBody());
     version = json.version;
   }
@@ -152,29 +175,6 @@ function logError(context, error){
     filterRule = "";
   }
 
-  var proxy = null;
-  // the tunnel agent if a forward proxy is required, or remains null
-  var agent = null;
-  // Preparing configuration if behind proxy
-  if (process.env.http_proxy){
-    proxy = process.env.http_proxy;
-    var url = new URL(proxy);
-    var proxyHost = url.hostname;
-    var proxyPort = url.port;
-    console.error('using proxy %s:%s', proxyHost, proxyPort);
-    agent = {
-      https: tunnel.httpsOverHttp({
-          proxy: {
-              host: proxyHost,
-              port: proxyPort
-          }
-      })
-    };
-    
-  }
-  else{
-    console.error('No proxy configuration detected');
-  }
 
   const username = argv.sonarusername;
   const password = argv.sonarpassword;
@@ -201,11 +201,10 @@ function logError(context, error){
   }
 
   if (data.sinceLeakPeriod) {
-    const res = request(
-      "GET",
-      `${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`,
-      {headers}
-    );
+    const res = await got(`${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`, {
+      agent,
+      headers
+    });
     const json = JSON.parse(res.getBody());
     data.previousPeriod = json.settings[0].value;
   }
