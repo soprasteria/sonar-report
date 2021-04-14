@@ -151,7 +151,7 @@ function logError(context, error){
     // For old versions of sonarQube (sonarQube won't accept filtering on a type that doesn't exist and will give HTTP 400 {"errors":[{"msg":"Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]})
     DEFAULT_FILTER="&types=VULNERABILITY"
     OPEN_STATUSES="OPEN,CONFIRMED,REOPENED"
-    HOTSPOT_STATUSES="TO_REVIEW,REVIEWED"
+    HOTSPOT_STATUSES="TO_REVIEW"
   }
   else{
     // For newer versions of sonar, rules and issues may be of type VULNERABILITY or SECURITY_HOTSPOT
