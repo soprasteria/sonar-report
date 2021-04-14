@@ -145,11 +145,13 @@ function logError(context, error){
 
   let DEFAULT_FILTER="";
   let OPEN_STATUSES="";
+  let HOTSPOT_STATUSES="";
   // Default filter gets only vulnerabilities
   if(data.noSecurityHotspot || version >= "8.0" || version < "7.3"){
     // For old versions of sonarQube (sonarQube won't accept filtering on a type that doesn't exist and will give HTTP 400 {"errors":[{"msg":"Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]})
     DEFAULT_FILTER="&types=VULNERABILITY"
     OPEN_STATUSES="OPEN,CONFIRMED,REOPENED"
+    HOTSPOT_STATUSES="TO_REVIEW,REVIEWED"
   }
   else{
     // For newer versions of sonar, rules and issues may be of type VULNERABILITY or SECURITY_HOTSPOT
@@ -285,7 +287,7 @@ function logError(context, error){
     if (version >= "8.0" && !data.noSecurityHotspot) {
       do {
         try {
-            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${data.projectName}&ps=${pageSize}&p=${page}&statuses=TO_REVIEW`, {
+            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${data.projectName}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
                 agent,
                 headers
             });
