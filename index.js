@@ -134,13 +134,16 @@ function logError(context, error){
   }
   
   //get SonarQube version
-  {
+  try {
     const res = await got(`${sonarBaseURL}/api/system/status`, {
       agent,
       headers
     });
-    const json = JSON.parse(res.getBody());
+    const json = JSON.parse(res.body);
     version = json.version;
+  } catch (error) {
+      logError("while getting version", error);
+      return null;
   }
 
   let DEFAULT_FILTER="";
@@ -284,10 +287,11 @@ function logError(context, error){
         }
       } while (nbResults === pageSize);
 
-    if (version >= "8.0" && !data.noSecurityHotspot) {
+    if (version >= "8.1" && !data.noSecurityHotspot) {
+      page = 1;
       do {
         try {
-            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${data.projectName}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
+            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
                 agent,
                 headers
             });
