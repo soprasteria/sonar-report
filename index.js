@@ -83,6 +83,7 @@ function logError(context, error){
   severity.set('MAJOR', 1);
   severity.set('CRITICAL', 2);
   severity.set('BLOCKER', 3);
+  var hotspotSeverities = {"HIGH": "CRITICAL", "MEDIUM": "MAJOR", "LOW": "MINOR"};
 
   const data = {
     date: new Date().toDateString(),
@@ -287,6 +288,7 @@ function logError(context, error){
         }
       } while (nbResults === pageSize);
 
+    let hSeverity = "";
     if (version >= "8.1" && !data.noSecurityHotspot) {
       page = 1;
       do {
@@ -299,9 +301,13 @@ function logError(context, error){
             const json = JSON.parse(response.body);
             nbResults = json.hotspots.length;
             data.issues = data.issues.concat(json.hotspots.map(hotspot => {
+              hSeverity = hotspotSeverities[hotspot.vulnerabilityProbability];
+              if (hSeverity === undefined) {
+                hSeverity = "INFO";
+              }
               return {
                 rule: undefined,
-                severity: hotspot.vulnerabilityProbability,
+                severity: hSeverity,
                 status: hotspot.status,
                 // Take only filename with path, without project name
                 component: hotspot.component.split(':').pop(),
