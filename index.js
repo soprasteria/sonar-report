@@ -303,7 +303,8 @@ function logError(context, error){
             data.issues = data.issues.concat(json.hotspots.map(hotspot => {
               hSeverity = hotspotSeverities[hotspot.vulnerabilityProbability];
               if (hSeverity === undefined) {
-                hSeverity = "INFO";
+                hSeverity = "MAJOR";
+                console.error("Unknown hotspot severity: %s", hotspot.vulnerabilityProbability);
               }
               return {
                 rule: undefined,
