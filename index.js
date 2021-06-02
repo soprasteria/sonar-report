@@ -83,6 +83,7 @@ function logError(context, error){
   severity.set('MAJOR', 1);
   severity.set('CRITICAL', 2);
   severity.set('BLOCKER', 3);
+  var hotspotSeverities = {"HIGH": "CRITICAL", "MEDIUM": "MAJOR", "LOW": "MINOR"};
 
   const data = {
     date: new Date().toDateString(),
@@ -108,14 +109,53 @@ function logError(context, error){
   const sonarComponent = argv.sonarcomponent;
   const withOrganization = data.sonarOrganization ? `&organization=${data.sonarOrganization}` : '';
   var headers = {};
+  var version = null;
+  
+  var proxy = null;
+  // the tunnel agent if a forward proxy is required, or remains null
+  var agent = null;
+  // Preparing configuration if behind proxy
+  if (process.env.http_proxy){
+    proxy = process.env.http_proxy;
+    var url = new URL(proxy);
+    var proxyHost = url.hostname;
+    var proxyPort = url.port;
+    console.error('using proxy %s:%s', proxyHost, proxyPort);
+    agent = {
+      https: tunnel.httpsOverHttp({
+          proxy: {
+              host: proxyHost,
+              port: proxyPort
+          }
+      })
+    };
+  }
+  else{
+    console.error('No proxy configuration detected');
+  }
+  
+  //get SonarQube version
+  try {
+    const res = await got(`${sonarBaseURL}/api/system/status`, {
+      agent,
+      headers
+    });
+    const json = JSON.parse(res.body);
+    version = json.version;
+  } catch (error) {
+      logError("while getting version", error);
+      return null;
+  }
 
   let DEFAULT_FILTER="";
   let OPEN_STATUSES="";
+  let HOTSPOT_STATUSES="";
   // Default filter gets only vulnerabilities
-  if(data.noSecurityHotspot){
+  if(data.noSecurityHotspot || version >= "8.1" || version < "7.3"){
     // For old versions of sonarQube (sonarQube won't accept filtering on a type that doesn't exist and will give HTTP 400 {"errors":[{"msg":"Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]})
     DEFAULT_FILTER="&types=VULNERABILITY"
     OPEN_STATUSES="OPEN,CONFIRMED,REOPENED"
+    HOTSPOT_STATUSES="TO_REVIEW"
   }
   else{
     // For newer versions of sonar, rules and issues may be of type VULNERABILITY or SECURITY_HOTSPOT
@@ -141,29 +181,6 @@ function logError(context, error){
     filterRule = "";
   }
 
-  var proxy = null;
-  // the tunnel agent if a forward proxy is required, or remains null
-  var agent = null;
-  // Preparing configuration if behind proxy
-  if (process.env.http_proxy){
-    proxy = process.env.http_proxy;
-    var url = new URL(proxy);
-    var proxyHost = url.hostname;
-    var proxyPort = url.port;
-    console.error('using proxy %s:%s', proxyHost, proxyPort);
-    agent = {
-      https: tunnel.httpsOverHttp({
-          proxy: {
-              host: proxyHost,
-              port: proxyPort
-          }
-      })
-    };
-    
-  }
-  else{
-    console.error('No proxy configuration detected');
-  }
 
   const username = argv.sonarusername;
   const password = argv.sonarpassword;
@@ -190,11 +207,10 @@ function logError(context, error){
   }
 
   if (data.sinceLeakPeriod) {
-    const res = request(
-      "GET",
-      `${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`,
-      {headers}
-    );
+    const res = await got(`${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`, {
+      agent,
+      headers
+    });
     const json = JSON.parse(res.getBody());
     data.previousPeriod = json.settings[0].value;
   }
@@ -271,7 +287,44 @@ function logError(context, error){
             return null;
         }
       } while (nbResults === pageSize);
-  
+
+    let hSeverity = "";
+    if (version >= "8.1" && !data.noSecurityHotspot) {
+      page = 1;
+      do {
+        try {
+            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
+                agent,
+                headers
+            });
+            page++;
+            const json = JSON.parse(response.body);
+            nbResults = json.hotspots.length;
+            data.issues = data.issues.concat(json.hotspots.map(hotspot => {
+              hSeverity = hotspotSeverities[hotspot.vulnerabilityProbability];
+              if (hSeverity === undefined) {
+                hSeverity = "MAJOR";
+                console.error("Unknown hotspot severity: %s", hotspot.vulnerabilityProbability);
+              }
+              return {
+                rule: undefined,
+                severity: hSeverity,
+                status: hotspot.status,
+                // Take only filename with path, without project name
+                component: hotspot.component.split(':').pop(),
+                line: hotspot.line,
+                description: "",
+                message: hotspot.message,
+                key: hotspot.key
+              };
+            }));
+        } catch (error) {
+          logError("while getting hotspots", error);  
+            return null;
+        }
+      } while (nbResults === pageSize);
+    }
+
     data.issues.sort(function (a, b) {
       return severity.get(b.severity) - severity.get(a.severity);
     });
