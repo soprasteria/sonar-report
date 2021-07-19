@@ -313,7 +313,7 @@ function logError(context, error){
                 // Take only filename with path, without project name
                 component: hotspot.component.split(':').pop(),
                 line: hotspot.line,
-                description: "",
+                description: hotspot.key + " " + hotspot.project,
                 message: hotspot.message,
                 key: hotspot.key
               };
