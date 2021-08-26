@@ -100,7 +100,8 @@ function logError(context, error){
     sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
     sonarOrganization: argv.sonarorganization,
     rules: [],
-    issues: []
+    issues: [],
+    hotspotKeys: []
   };
 
   const leakPeriodFilter = data.sinceLeakPeriod ? '&sinceLeakPeriod=true' : '';
@@ -143,30 +144,38 @@ function logError(context, error){
     const json = JSON.parse(res.body);
     version = json.version;
   } catch (error) {
-      logError("while getting version", error);
+      logError("getting version", error);
       return null;
   }
 
-  let DEFAULT_FILTER="";
-  let OPEN_STATUSES="";
-  let HOTSPOT_STATUSES="";
-  // Default filter gets only vulnerabilities
-  if(data.noSecurityHotspot || version >= "8.1" || version < "7.3"){
-    // For old versions of sonarQube (sonarQube won't accept filtering on a type that doesn't exist and will give HTTP 400 {"errors":[{"msg":"Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]})
-    DEFAULT_FILTER="&types=VULNERABILITY"
-    OPEN_STATUSES="OPEN,CONFIRMED,REOPENED"
-    HOTSPOT_STATUSES="TO_REVIEW"
+  let DEFAULT_ISSUES_FILTER="";
+  let DEFAULT_RULES_FILTER="";
+  let ISSUE_STATUSES="";
+  let HOTSPOT_STATUSES="TO_REVIEW"
+
+  if(data.noSecurityHotspot || version < "7.3"){
+    DEFAULT_ISSUES_FILTER="&types=VULNERABILITY"
+    DEFAULT_RULES_FILTER="&types=VULNERABILITY"
+    ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED"
+  }
+  else if (version >= "7.3" && version < "8.1"){
+    // hotspots were stored in the /issues endpoint
+    DEFAULT_ISSUES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
+    DEFAULT_RULES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
+    ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED,TO_REVIEW,IN_REVIEW"
   }
   else{
-    // For newer versions of sonar, rules and issues may be of type VULNERABILITY or SECURITY_HOTSPOT
-    DEFAULT_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
-    // the security hotspot adds TO_REVIEW,IN_REVIEW
-    OPEN_STATUSES="OPEN,CONFIRMED,REOPENED,TO_REVIEW,IN_REVIEW"
+    // version >= 8.1
+    // rules have type SECURITY_HOTSPOT but issues don't (because hotspots are now in a dedicated endpoint)
+    DEFAULT_ISSUES_FILTER="&types=VULNERABILITY"
+    DEFAULT_RULES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
+    ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED"
   }
+  
 
   // filters for getting rules and issues
-  let filterRule = DEFAULT_FILTER;
-  let filterIssue = DEFAULT_FILTER;
+  let filterRule = DEFAULT_RULES_FILTER;
+  let filterIssue = DEFAULT_ISSUES_FILTER;
 
   if(data.allBugs){
     filterRule = "";
@@ -258,7 +267,7 @@ function logError(context, error){
        */
       do {
         try {
-            const response = await got(`${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${OPEN_STATUSES}&resolutions=&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`, {
+            const response = await got(`${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`, {
                 agent,
                 headers
             });
@@ -290,6 +299,7 @@ function logError(context, error){
 
     let hSeverity = "";
     if (version >= "8.1" && !data.noSecurityHotspot) {
+      // 1) Listing hotspots with hotspots/search
       page = 1;
       do {
         try {
@@ -300,30 +310,45 @@ function logError(context, error){
             page++;
             const json = JSON.parse(response.body);
             nbResults = json.hotspots.length;
-            data.issues = data.issues.concat(json.hotspots.map(hotspot => {
-              hSeverity = hotspotSeverities[hotspot.vulnerabilityProbability];
+            data.hotspotKeys = json.hotspots.map(hotspot => hotspot.key);
+        } catch (error) {
+          logError("getting hotspots list", error);  
+            return null;
+        }
+      } while (nbResults === pageSize);
+
+      // 2) Getting hotspots details with hotspots/show
+      for (let hotspotKey of data.hotspotKeys){
+          try {
+              const response = await got(`${sonarBaseURL}/api/hotspots/show?hotspot=${hotspotKey}`, {
+                  agent,
+                  headers
+              });
+              const hotspot = JSON.parse(response.body);
+              hSeverity = hotspotSeverities[hotspot.rule.vulnerabilityProbability];
               if (hSeverity === undefined) {
                 hSeverity = "MAJOR";
                 console.error("Unknown hotspot severity: %s", hotspot.vulnerabilityProbability);
               }
-              return {
-                rule: undefined,
-                severity: hSeverity,
-                status: hotspot.status,
-                // Take only filename with path, without project name
-                component: hotspot.component.split(':').pop(),
-                line: hotspot.line,
-                description: "",
-                message: hotspot.message,
-                key: hotspot.key
-              };
-            }));
-        } catch (error) {
-          logError("while getting hotspots", error);  
-            return null;
+              data.issues.push(
+                {
+                  rule: hotspot.rule.key,
+                  severity: hSeverity,
+                  status: hotspot.status,
+                  // Take only filename with path, without project name
+                  component: hotspot.component.key.split(':').pop(),
+                  line: hotspot.line,
+                  description: hotspot.rule ? hotspot.rule.name : "/",
+                  message: hotspot.message,
+                  key: hotspot.key
+                });
+          } catch (error) {
+            logError("getting hotspots details", error);  
+              return null;
+          }
         }
-      } while (nbResults === pageSize);
-    }
+      }
+
 
     data.issues.sort(function (a, b) {
       return severity.get(b.severity) - severity.get(a.severity);
