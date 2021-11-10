@@ -30,6 +30,9 @@ DESCRIPTION
     --branch
         Branch in Sonarqube that we want to get the issues for
 
+    --pullrequest
+        pull request ID in Sonarqube for which to get the issues/hotspots
+
     --sonarurl
         base URL of the SonarQube instance to query from
 
@@ -90,6 +93,7 @@ function logError(context, error){
     projectName: argv.project,
     applicationName: argv.application,
     releaseName: argv.release,
+    pullRequest: argv.pullrequest,
     branch: argv.branch,
     sinceLeakPeriod: (argv.sinceleakperiod == 'true'),
     previousPeriod: '',
@@ -176,14 +180,21 @@ function logError(context, error){
   // filters for getting rules and issues
   let filterRule = DEFAULT_RULES_FILTER;
   let filterIssue = DEFAULT_ISSUES_FILTER;
+  let filterHotspots = "";
 
   if(data.allBugs){
     filterRule = "";
     filterIssue = "";
   }
 
+  if(data.pullRequest){
+    filterIssue=filterIssue + "&pullRequest=" + data.pullRequest
+    filterHotspots=filterHotspots + "&pullRequest=" + data.pullRequest
+  }
+
   if(data.branch){
     filterIssue=filterIssue + "&branch=" + data.branch
+    filterHotspots=filterHotspots + "&branch=" + data.branch
   }
 
   if(data.fixMissingRule){
@@ -255,47 +266,47 @@ function logError(context, error){
     const pageSize = 500;
     let page = 1;
     let nbResults;
-      /** Get all statuses except "REVIEWED". 
-       * Actions in sonarQube vs status in security hotspot (sonar >= 7): 
-       * - resolve as reviewed
-       *    "resolution": "FIXED"
-       *    "status": "REVIEWED"
-       * - open as vulnerability
-       *    "status": "OPEN"
-       * - set as in review
-       *    "status": "IN_REVIEW"
-       */
-      do {
-        try {
-            const response = await got(`${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`, {
-                agent,
-                headers
-            });
-            page++;
-            const json = JSON.parse(response.body);
-            nbResults = json.issues.length;
-            data.issues = data.issues.concat(json.issues.map(issue => {
-              const rule = data.rules.find(oneRule => oneRule.key === issue.rule);
-              const message = rule ? rule.name : "/";
-              return {
-                rule: issue.rule,
-                // For security hotspots, the vulnerabilities show without a severity before they are confirmed
-                // In this case, get the severity from the rule
-                severity: (typeof issue.severity !== 'undefined') ? issue.severity : rule.severity,
-                status: issue.status,
-                // Take only filename with path, without project name
-                component: issue.component.split(':').pop(),
-                line: issue.line,
-                description: message,
-                message: issue.message,
-                key: issue.key
-              };
-            }));
-        } catch (error) {
-          logError("getting issues", error);  
-            return null;
-        }
-      } while (nbResults === pageSize);
+    /** Get all statuses except "REVIEWED". 
+     * Actions in sonarQube vs status in security hotspot (sonar >= 7): 
+     * - resolve as reviewed
+     *    "resolution": "FIXED"
+     *    "status": "REVIEWED"
+     * - open as vulnerability
+     *    "status": "OPEN"
+     * - set as in review
+     *    "status": "IN_REVIEW"
+     */
+    do {
+      try {
+          const response = await got(`${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`, {
+              agent,
+              headers
+          });
+          page++;
+          const json = JSON.parse(response.body);
+          nbResults = json.issues.length;
+          data.issues = data.issues.concat(json.issues.map(issue => {
+            const rule = data.rules.find(oneRule => oneRule.key === issue.rule);
+            const message = rule ? rule.name : "/";
+            return {
+              rule: issue.rule,
+              // For security hotspots, the vulnerabilities show without a severity before they are confirmed
+              // In this case, get the severity from the rule
+              severity: (typeof issue.severity !== 'undefined') ? issue.severity : rule.severity,
+              status: issue.status,
+              // Take only filename with path, without project name
+              component: issue.component.split(':').pop(),
+              line: issue.line,
+              description: message,
+              message: issue.message,
+              key: issue.key
+            };
+          }));
+      } catch (error) {
+        logError("getting issues", error);  
+          return null;
+      }
+    } while (nbResults === pageSize);
 
     let hSeverity = "";
     if (version >= "8.1" && !data.noSecurityHotspot) {
@@ -303,7 +314,7 @@ function logError(context, error){
       page = 1;
       do {
         try {
-            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
+            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
                 agent,
                 headers
             });
@@ -319,35 +330,35 @@ function logError(context, error){
 
       // 2) Getting hotspots details with hotspots/show
       for (let hotspotKey of data.hotspotKeys){
-          try {
-              const response = await got(`${sonarBaseURL}/api/hotspots/show?hotspot=${hotspotKey}`, {
-                  agent,
-                  headers
+        try {
+            const response = await got(`${sonarBaseURL}/api/hotspots/show?hotspot=${hotspotKey}`, {
+                agent,
+                headers
+            });
+            const hotspot = JSON.parse(response.body);
+            hSeverity = hotspotSeverities[hotspot.rule.vulnerabilityProbability];
+            if (hSeverity === undefined) {
+              hSeverity = "MAJOR";
+              console.error("Unknown hotspot severity: %s", hotspot.vulnerabilityProbability);
+            }
+            data.issues.push(
+              {
+                rule: hotspot.rule.key,
+                severity: hSeverity,
+                status: hotspot.status,
+                // Take only filename with path, without project name
+                component: hotspot.component.key.split(':').pop(),
+                line: hotspot.line,
+                description: hotspot.rule ? hotspot.rule.name : "/",
+                message: hotspot.message,
+                key: hotspot.key
               });
-              const hotspot = JSON.parse(response.body);
-              hSeverity = hotspotSeverities[hotspot.rule.vulnerabilityProbability];
-              if (hSeverity === undefined) {
-                hSeverity = "MAJOR";
-                console.error("Unknown hotspot severity: %s", hotspot.vulnerabilityProbability);
-              }
-              data.issues.push(
-                {
-                  rule: hotspot.rule.key,
-                  severity: hSeverity,
-                  status: hotspot.status,
-                  // Take only filename with path, without project name
-                  component: hotspot.component.key.split(':').pop(),
-                  line: hotspot.line,
-                  description: hotspot.rule ? hotspot.rule.name : "/",
-                  message: hotspot.message,
-                  key: hotspot.key
-                });
-          } catch (error) {
-            logError("getting hotspots details", error);  
-              return null;
-          }
+        } catch (error) {
+          logError("getting hotspots details", error);  
+            return null;
         }
       }
+    }
 
 
     data.issues.sort(function (a, b) {
