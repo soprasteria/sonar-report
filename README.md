@@ -77,7 +77,41 @@ To circumvent this issue, the fixMissingRule will extract all rules without any 
 Beware that, with this parameter activated, all the issues linked to the rules displayed may not be displayed. 
 
 ### noSecurityHotspot
-Set this flag to true if using a sonarQube version that doesn't support security hotspots (<7.3?)
+Sonar-report will try to find how your sonarqube instance is working with hotspots depending on the running version. However in last resort, you can use the `--noSecurityHotspot="true"` flag in order to deactivate the hotspots processing. 
+
+**Note that you may miss out on some vulnerabilities when using this option if your sonarqube instance does support hotspots.**
+
+General information about security hotspots: https://docs.sonarqube.org/latest/user-guide/security-hotspots/
+
+Here's a brief history of sonarqube dealing with hotspots. 
+
+- version < 7.3
+  - hotspots don't exist
+- 7.3 <= version < 7.8: 
+  - hotspots are stored in the /issues endpoint
+  - issue status doesn't include TO_REVIEW, IN_REVIEW yet
+  - issues type includes SECURITY_HOTSPOT
+  - rules type includes SECURITY_HOTSPOT for now on
+- 7.8 <= version < 8.2
+  - hotspots are stored in the /issues endpoint
+  - issue status includes TO_REVIEW, IN_REVIEW
+  - issues type includes SECURITY_HOTSPOT
+- version >= 8.2 
+  - hotspots are in a dedicated endpoint /hotspots
+  - issues status don't include anymore TO_REVIEW, IN_REVIEW
+  - issues type don't include anymore SECURITY_HOTSPOT
+
+
+A few notes: 
+- this behavior was verified using the embedded web_api documentation from dockerhub community distributions
+- Versions 7.2 and 7.3 couldn't be verified as they are not present on dockerhub (and sonarqube doesn't seem to be publishing the API documentation per version)
+- some implementations may not work as expected: for example sonarcloud v8.0 doesn't know about hotspots. When using sonarcloud v8.0 please use the `--noSecurityHotspot="true"` flag
+
+To verify how your instance deals with hotspots, check: 
+- ${sonarBaseURL}/api/system/status
+- ${sonarBaseURL}/web_api/api/issues/search (check Possible values of parameters `statuses`, `types`)
+- ${sonarBaseURL}/web_api/api/rules/search (check Possible values of parameter `types`)
+- ${sonarBaseURL}/web_api/api/hotspots
 
 ## Develop
 
@@ -97,7 +131,7 @@ Set `fixMissingRule` to true
 
 - Error "Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]}
 
-Your version of sonarQube doesn't support security hotspots. Set `noSecurityHotspot` to true.
+Your version of sonarQube doesn't support security hotspots. Set `noSecurityHotspot` to true. (more info check "noSecurityHotspot" description above)
 
 - {"errors":[{"msg":"Can return only the first 10000 results. 10500th result asked."}]}
 

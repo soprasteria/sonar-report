@@ -1,6 +1,6 @@
 {
   "name": "sonar-report",
-  "version": "2.2.1",
+  "version": "2.3.1",
   "main": "index.js",
   "author": "SopraSteria",
   "bin": {
