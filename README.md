@@ -129,11 +129,12 @@ Run with the same command as [Use](#use) but use `node index.js` instead of `son
 
 Set `fixMissingRule` to true
 
-- Error "Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]}
+- Error `Value of parameter 'types' (SECURITY_HOTSPOT) must be one of: [CODE_SMELL, BUG, VULNERABILITY]"}]}`
+- or: `Error while getting issues :  - Response code 400 (Bad Request) - 400 - Bad Request - {"errors":[{"msg":"Value of parameter \u0027statuses\u0027 (TO_REVIEW) must be one of: [OPEN, CONFIRMED, REOPENED, RESOLVED, CLOSED]"}]}`
 
 Your version of sonarQube doesn't support security hotspots. Set `noSecurityHotspot` to true. (more info check "noSecurityHotspot" description above)
 
-- {"errors":[{"msg":"Can return only the first 10000 results. 10500th result asked."}]}
+- `{"errors":[{"msg":"Can return only the first 10000 results. 10500th result asked."}]}`
 
 This is a limitation in sonarQube API. There is no way around it to date apart from adding limiting filters
 
