@@ -249,7 +249,7 @@
 					<td><%= issues[i].description %></td>
 					<td><%= issues[i].message %></td>
 					<td style="display:none;"><%= issues[i].key %></td>
-					<td><%= issues[i].status %></td>
+					<td><%- issues[i].link(issues[i].status) %></td>
 				</tr>
 				<% } %>
 			</tbody>

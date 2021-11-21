@@ -63,6 +63,9 @@ DESCRIPTION
     --noSecurityHotspot
         Set this flag for old versions of sonarQube without security hotspots (<7.3?). Default is false
 
+    --linkIssues
+        Set this flag to create links to Sonar from reported issues
+        
     --help
         display this help message`);
   process.exit();
@@ -79,6 +82,17 @@ function logError(context, error){
     "Error while %s : %s - %s - %s - %s - %s", 
     context, errorCode, errorMessage, errorResponseStatusCode, errorResponseStatusMessage,  errorResponseBody);  
 }
+
+
+const issueLink = argv.linkIssues == 'true' ?
+    (data, issue) =>
+        c => `<a href=\"${data.sonarBaseURL}/project/issues?id=${encodeURIComponent(data.sonarComponent)}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(issue.key)}\">${c}</a>` :
+    (data, issue) => c => c;
+
+const hotspotLink = argv.linkIssues == 'true' ?
+    (data, hotspot) =>
+        c => `<a href=\"${data.sonarBaseURL}/security_hotspots?id=${encodeURIComponent(data.sonarComponent)}&hotspots=${encodeURIComponent(hotspot.key)}\">${c}</a>` :
+    (data, hotspot) => c => c;
 
 (async () => {
   var severity = new Map();
@@ -102,6 +116,7 @@ function logError(context, error){
     noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
     // sonar URL without trailing /
     sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
+    sonarComponent: argv.sonarcomponent,
     sonarOrganization: argv.sonarorganization,
     rules: [],
     issues: [],
@@ -111,7 +126,7 @@ function logError(context, error){
   const leakPeriodFilter = data.sinceLeakPeriod ? '&sinceLeakPeriod=true' : '';
   data.deltaAnalysis = data.sinceLeakPeriod ? 'Yes' : 'No';
   const sonarBaseURL = data.sonarBaseURL;
-  const sonarComponent = argv.sonarcomponent;
+  const sonarComponent = data.sonarComponent;
   const withOrganization = data.sonarOrganization ? `&organization=${data.sonarOrganization}` : '';
   var headers = {};
   var version = null;
@@ -294,6 +309,7 @@ function logError(context, error){
               // In this case, get the severity from the rule
               severity: (typeof issue.severity !== 'undefined') ? issue.severity : rule.severity,
               status: issue.status,
+              link: issueLink(data, issue),
               // Take only filename with path, without project name
               component: issue.component.split(':').pop(),
               line: issue.line,
@@ -346,6 +362,7 @@ function logError(context, error){
                 rule: hotspot.rule.key,
                 severity: hSeverity,
                 status: hotspot.status,
+                link: hotspotLink(data, hotspot),
                 // Take only filename with path, without project name
                 component: hotspot.component.key.split(':').pop(),
                 line: hotspot.line,
@@ -372,7 +389,7 @@ function logError(context, error){
       minor: data.issues.filter(issue => issue.severity === "MINOR").length
     };
   }
-  
+
   ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {
     console.log(str);
   });
