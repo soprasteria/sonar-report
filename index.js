@@ -63,6 +63,9 @@ DESCRIPTION
     --noSecurityHotspot
         Set this flag for old versions of sonarQube without security hotspots (<7.3?). Default is false
 
+    --noRulesInReport
+        Set this flag to omit "Known Security Rules" section from report. Default is false
+
     --help
         display this help message`);
   process.exit();
@@ -100,6 +103,7 @@ function logError(context, error){
     allBugs: (argv.allbugs == 'true'),
     fixMissingRule: (argv.fixMissingRule == 'true'),
     noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
+    noRulesInReport: (argv.noRulesInReport == 'true'),
     // sonar URL without trailing /
     sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
     sonarOrganization: argv.sonarorganization,
