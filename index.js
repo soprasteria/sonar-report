@@ -103,7 +103,7 @@ function logError(context, error){
     // sonar URL without trailing /
     sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
     sonarOrganization: argv.sonarorganization,
-    rules: [],
+    rules: new Map(),
     issues: [],
     hotspotKeys: []
   };
@@ -242,19 +242,17 @@ function logError(context, error){
 
   do {
       try {
-          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filterRule}`, {
+          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&f=name,htmlDesc,severity&ps=${pageSize}&p=${page}${filterRule}`, {
               agent,
               headers
           });
           page++;
           const json = JSON.parse(response.body);
           nbResults = json.rules.length;
-          data.rules = data.rules.concat(json.rules.map(rule => ({
-          key: rule.key,
-          htmlDesc: rule.htmlDesc,
-          name: rule.name,
-          severity: rule.severity
-          })));
+          json.rules.forEach(r => data.rules.set(
+            r.key,
+            (({name, htmlDesc, severity}) => ({name, htmlDesc, severity}))(r)
+          ));
       } catch (error) {
           logError("getting rules", error);
           return null;
@@ -286,7 +284,7 @@ function logError(context, error){
           const json = JSON.parse(response.body);
           nbResults = json.issues.length;
           data.issues = data.issues.concat(json.issues.map(issue => {
-            const rule = data.rules.find(oneRule => oneRule.key === issue.rule);
+            const rule = data.rules.get(issue.rule);
             const message = rule ? rule.name : "/";
             return {
               rule: issue.rule,
