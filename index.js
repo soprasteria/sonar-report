@@ -321,7 +321,7 @@ function logError(context, error){
             page++;
             const json = JSON.parse(response.body);
             nbResults = json.hotspots.length;
-            data.hotspotKeys = json.hotspots.map(hotspot => hotspot.key);
+            data.hotspotKeys.push(...json.hotspots.map(hotspot => hotspot.key));
         } catch (error) {
           logError("getting hotspots list", error);  
             return null;
