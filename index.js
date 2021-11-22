@@ -237,6 +237,8 @@ function logError(context, error){
 
   {
     const pageSize = 500;
+    const maxResults = 10000;
+    const maxPage = maxResults / pageSize;
     let page = 1;
     let nbResults;
 
@@ -259,11 +261,13 @@ function logError(context, error){
           logError("getting rules", error);
           return null;
       }
-    } while (nbResults === pageSize);
+    } while (nbResults === pageSize && page <= maxPage);
   }
 
   {
     const pageSize = 500;
+    const maxResults = 10000;
+    const maxPage = maxResults / pageSize;
     let page = 1;
     let nbResults;
     /** Get all statuses except "REVIEWED". 
@@ -306,7 +310,7 @@ function logError(context, error){
         logError("getting issues", error);  
           return null;
       }
-    } while (nbResults === pageSize);
+    } while (nbResults === pageSize && page <= maxPage);
 
     let hSeverity = "";
     if (version >= "8.1" && !data.noSecurityHotspot) {
@@ -326,7 +330,7 @@ function logError(context, error){
           logError("getting hotspots list", error);  
             return null;
         }
-      } while (nbResults === pageSize);
+      } while (nbResults === pageSize && page <= maxPage);
 
       // 2) Getting hotspots details with hotspots/show
       for (let hotspotKey of data.hotspotKeys){
