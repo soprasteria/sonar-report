@@ -63,6 +63,12 @@ DESCRIPTION
     --noSecurityHotspot
         Set this flag for old versions of sonarQube without security hotspots (<7.3?). Default is false
 
+    --vulnerabilityPhrase
+        Set to override 'Vulnerability' phrase in the report. Default 'Vulnerability'
+            
+    --vulnerabilityPluralPhrase
+        Set to override 'Vulnerabilities' phrase in the report. Default 'Vulnerabilities'    
+    
     --help
         display this help message`);
   process.exit();
@@ -100,6 +106,8 @@ function logError(context, error){
     allBugs: (argv.allbugs == 'true'),
     fixMissingRule: (argv.fixMissingRule == 'true'),
     noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
+    vulnerabilityPhrase: argv.vulnerabilityPhrase || 'Vulnerability',
+    vulnerabilityPluralPhrase: argv.vulnerabilityPluralPhrase || 'Vulnerabilities',
     // sonar URL without trailing /
     sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
     sonarOrganization: argv.sonarorganization,
