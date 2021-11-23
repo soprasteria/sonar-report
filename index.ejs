@@ -185,6 +185,31 @@
 			<% } %>
 		</dl>
 
+        <%if (qualityGateStatus) { %>
+        <h2>Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period.date %> (<%= qualityGateStatus.projectStatus.period.parameter %>)</h2>
+
+          <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+
+          <% for (const condition of qualityGateStatus.projectStatus.conditions) { %>
+            <tr>
+                <td style="background-color:<%- condition.status == 'OK' ? '#0a0' : '#d4333f' %>"></td>
+                <td><%= condition.metricKey %></td>
+                <td><%= condition.actualValue %> <%= condition.comparator == 'GT' ? '>' : '<' %> <%= condition.errorThreshold %></td>
+            </tr>
+          <% } %>
+
+          	</tbody>
+          </table>
+        <% } %>
+
 		<h2>Summary of the Detected Vulnerabilities</h2>
 		<table>
 			<thead>

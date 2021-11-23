@@ -63,6 +63,9 @@ DESCRIPTION
     --noSecurityHotspot
         Set this flag for old versions of sonarQube without security hotspots (<7.3?). Default is false
 
+    --qualityGateStatus
+        Set this flag to include quality gate status in the report. Default is false
+        
     --help
         display this help message`);
   process.exit();
@@ -235,6 +238,28 @@ function logError(context, error){
     data.previousPeriod = json.settings[0].value;
   }
 
+  if (argv.qualityGateStatus === 'true') {
+      try {
+          const response = await got(`${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}`, {
+              agent,
+              headers
+          });
+          const json = JSON.parse(response.body);
+          if (json.projectStatus.conditions) {
+              for (const condition of json.projectStatus.conditions) {
+                  condition.metricKey = condition.metricKey.replace(/_/g, " ");
+              }
+          }
+          data.qualityGateStatus = json;
+          if (!data.releaseName) {
+              data.releaseName = json.projectStatus.period.parameter;
+          }
+      } catch (error) {
+          logError("getting quality gate status", error);
+          return null;
+      }
+  }
+
   {
     const pageSize = 500;
     let page = 1;
@@ -372,7 +397,7 @@ function logError(context, error){
       minor: data.issues.filter(issue => issue.severity === "MINOR").length
     };
   }
-  
+
   ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {
     console.log(str);
   });
