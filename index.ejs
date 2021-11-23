@@ -5,151 +5,16 @@
 	<meta charset="UTF-8">
 	<title>SonarQube Vulnerability Report</title>
 	<style>
-		/*
+	/*
 	The sss stylesheet is released under the MIT license.
 	<https://github.com/Thiht/sss>
 	*/
-		pre,
-		td,
-		th {
-			padding: 5px 10px
-		}
-
-		code,
-		hr,
-		pre,
-		thead {
-			background: #EEE
-		}
-
-		body {
-			color: #333;
-			font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
-			line-height: 1.5;
-		}
-
-		div.summup {
-			max-width: 800px;
-			margin: 50px auto;
-		}
-		div.detail {
-			padding: 20px;
-		}
-
-		h1,
-		h2,
-		h3,
-		h4,
-		h5,
-		h6 {
-			font-weight: 400;
-			line-height: 1em;
-			margin: 20px 0
-		}
-
-		h1 {
-			font-size: 2.25em
-		}
-
-		h2 {
-			font-size: 1.75em
-		}
-
-		h3 {
-			font-size: 1.5em
-		}
-
-		h4,
-		h5,
-		h6 {
-			font-size: 1.25em
-		}
-
-		a {
-			color: #08C;
-			text-decoration: none
-		}
-
-		a:focus,
-		a:hover {
-			text-decoration: underline
-		}
-
-		a:visited {
-			color: #058
-		}
-
-		img {
-			max-width: 100%
-		}
-
-		li+li {
-			margin-top: 3px
-		}
-
-		dt {
-			font-weight: 700
-		}
-
-		code {
-			font-family: Consolas, "Lucida Console", monospace;
-			padding: 1px 5px
-		}
-
-		pre {
-			white-space: pre-wrap
-		}
-
-		pre code {
-			padding: 0
-		}
-
-		blockquote {
-			border-left: 5px solid #EEE;
-			margin: 0;
-			padding: 0 10px
-		}
-
-		table {
-			border-collapse: collapse;
-			width: 100%
-		}
-
-		table+table {
-			margin-top: 1em
-		}
-
-		thead {
-			text-align: left
-		}
-
-		td,
-		th {
-			border: 1px solid #EEE
-		}
-		td.component{
-			word-break: break-all;
-		}
-
-		hr {
-			border: 0;
-			height: 1px
-		}
-	</style>
-	<style>
-		.banner {
-			text-align: center;
-		}
-
-		canvas {
-			display: block;
-			margin: 10px auto;
-		}
+	<%- stylesheet %>
 	</style>
 </head>
 
 <body>
-	<div class=summup>
+	<div class="summup">
 		<!-- insert your company banner here -->
 		<!--
 		<p class="banner">
@@ -196,22 +61,22 @@
 			</thead>
 			<tbody>
 				<tr>
-					<td style="background-color:#2c3e50"></td>
+					<td class="sevBLOCKER"></td>
 					<td>BLOCKER</td>
 					<td><%= summary.blocker %></td>
 				</tr>
 				<tr>
-					<td style="background-color: #d43223"></td>
+					<td class="sevCRITICAL"></td>
 					<td>CRITICAL</td>
 					<td><%= summary.critical %></td>
 				</tr>
 				<tr>
-					<td style="background-color: #f39c12"></td>
+					<td class="sevMAJOR"></td>
 					<td>MAJOR</td>
 					<td><%= summary.major %></td>
 				</tr>
 				<tr>
-					<td style="background-color: #319ddb"></td>
+					<td class="sevMINOR"></td>
 					<td>MINOR</td>
 					<td><%= summary.minor %></td>
 				</tr>
@@ -235,7 +100,7 @@
 					<th>Line</th>
 					<th>Description</th>
 					<th>Message</th>
-					<th style="display:none;">Key</th>
+					<th class="hidden">Key</th>
 					<th>Status</th>
 				</tr>
 			</thead>
@@ -248,7 +113,7 @@
 					<td><%= issues[i].line %></td>
 					<td><%= issues[i].description %></td>
 					<td><%= issues[i].message %></td>
-					<td style="display:none;"><%= issues[i].key %></td>
+					<td class="hidden"><%= issues[i].key %></td>
 					<td><%= issues[i].status %></td>
 				</tr>
 				<% } %>
@@ -258,7 +123,7 @@
 		<% } %>
 
 		<h3>Known Security Rules</h3>
-		<table style="table-layout: fixed; word-wrap: break-word">
+		<table class="rulestable">
 			<thead>
 				<tr>
 					<th>Rule</th>

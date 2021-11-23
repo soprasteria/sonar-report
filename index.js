@@ -3,6 +3,7 @@ const argv = require("minimist")(process.argv.slice(2));
 const got = require('got');
 const tunnel = require('tunnel');
 const ejs = require("ejs");
+const fs = require("fs").promises;
 
 if (argv.help) {
   console.log(`SYNOPSIS
@@ -62,7 +63,10 @@ DESCRIPTION
 
     --noSecurityHotspot
         Set this flag for old versions of sonarQube without security hotspots (<7.3?). Default is false
-
+        
+    --stylesheet
+        Output css stylesheet    
+    
     --help
         display this help message`);
   process.exit();
@@ -81,6 +85,12 @@ function logError(context, error){
 }
 
 (async () => {
+    let stylesheet = await fs.readFile(__dirname + "/style.css", "binary");
+    if (argv.stylesheet) {
+        console.log(stylesheet);
+        return;
+    }
+
   var severity = new Map();
   severity.set('MINOR', 0);
   severity.set('MAJOR', 1);
@@ -89,6 +99,7 @@ function logError(context, error){
   var hotspotSeverities = {"HIGH": "CRITICAL", "MEDIUM": "MAJOR", "LOW": "MINOR"};
 
   const data = {
+    stylesheet: stylesheet,
     date: new Date().toDateString(),
     projectName: argv.project,
     applicationName: argv.application,
@@ -372,7 +383,7 @@ function logError(context, error){
       minor: data.issues.filter(issue => issue.severity === "MINOR").length
     };
   }
-  
+
   ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {
     console.log(str);
   });
