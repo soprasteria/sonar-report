@@ -184,6 +184,7 @@ function logError(context, error){
   let filterRule = DEFAULT_RULES_FILTER;
   let filterIssue = DEFAULT_ISSUES_FILTER;
   let filterHotspots = "";
+  let filterProjectStatus = "";
 
   if(data.allBugs){
     filterRule = "";
@@ -193,11 +194,13 @@ function logError(context, error){
   if(data.pullRequest){
     filterIssue=filterIssue + "&pullRequest=" + data.pullRequest
     filterHotspots=filterHotspots + "&pullRequest=" + data.pullRequest
+    filterProjectStatus = "&pullRequest=" + data.pullRequest;
   }
 
   if(data.branch){
     filterIssue=filterIssue + "&branch=" + data.branch
     filterHotspots=filterHotspots + "&branch=" + data.branch
+    filterProjectStatus = "&branch=" + data.branch;
   }
 
   if(data.fixMissingRule){
@@ -240,7 +243,7 @@ function logError(context, error){
 
   if (argv.qualityGateStatus === 'true') {
       try {
-          const response = await got(`${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}`, {
+          const response = await got(`${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}${filterProjectStatus}`, {
               agent,
               headers
           });
@@ -251,9 +254,6 @@ function logError(context, error){
               }
           }
           data.qualityGateStatus = json;
-          if (!data.releaseName) {
-              data.releaseName = json.projectStatus.period.parameter;
-          }
       } catch (error) {
           logError("getting quality gate status", error);
           return null;
