@@ -3,7 +3,7 @@
 
 <head>
 	<meta charset="UTF-8">
-	<title>SonarQube Vulnerability Report</title>
+	<title>SonarQube <%= vulnerabilityPhrase %> Report</title>
 	<style>
 		/*
 	The sss stylesheet is released under the MIT license.
@@ -159,7 +159,7 @@
 		</p>
 		-->
 
-		<h1>SonarQube Vulnerability Report</h1>
+		<h1>SonarQube <%= vulnerabilityPhrase %> Report</h1>
 
 		<dl>
 			<dt>Report Generated On</dt>
@@ -185,7 +185,7 @@
 			<% } %>
 		</dl>
 
-		<h2>Summary of the Detected Vulnerabilities</h2>
+		<h2>Summary of the Detected <%= vulnerabilityPluralPhrase %></h2>
 		<table>
 			<thead>
 				<tr>
@@ -225,7 +225,7 @@
 
 	<div class=detail>
 		<%if (issues.length > 0) { %>
-		<h2>Detail of the Detected Vulnerabilities</h2>
+		<h2>Detail of the Detected <%= vulnerabilityPluralPhrase %></h2>
 		<table>
 			<thead>
 				<tr>
