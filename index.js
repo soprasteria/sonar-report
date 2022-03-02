@@ -61,11 +61,17 @@ DESCRIPTION
         Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true. Default is false
 
     --noSecurityHotspot
-        Set this flag for old versions of sonarQube without security hotspots (<7.3?). Default is false
+        Set this flag for old versions of sonarQube without security hotspots (<7.3). Default is false
 
     --linkIssues
         Set this flag to create links to Sonar from reported issues
         
+    --vulnerabilityPhrase
+        Set to override 'Vulnerability' phrase in the report. Default 'Vulnerability'
+            
+    --vulnerabilityPluralPhrase
+        Set to override 'Vulnerabilities' phrase in the report. Default 'Vulnerabilities'    
+    
     --help
         display this help message`);
   process.exit();
@@ -114,6 +120,8 @@ const hotspotLink = argv.linkIssues == 'true' ?
     allBugs: (argv.allbugs == 'true'),
     fixMissingRule: (argv.fixMissingRule == 'true'),
     noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
+    vulnerabilityPhrase: argv.vulnerabilityPhrase || 'Vulnerability',
+    vulnerabilityPluralPhrase: argv.vulnerabilityPluralPhrase || 'Vulnerabilities',
     // sonar URL without trailing /
     sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
     sonarComponent: argv.sonarcomponent,
@@ -162,6 +170,7 @@ const hotspotLink = argv.linkIssues == 'true' ?
     });
     const json = JSON.parse(res.body);
     version = json.version;
+    console.error("sonarqube version: %s", version);
   } catch (error) {
       logError("getting version", error);
       return null;
@@ -173,19 +182,26 @@ const hotspotLink = argv.linkIssues == 'true' ?
   let HOTSPOT_STATUSES="TO_REVIEW"
 
   if(data.noSecurityHotspot || version < "7.3"){
+    // hotspots don't exist
     DEFAULT_ISSUES_FILTER="&types=VULNERABILITY"
     DEFAULT_RULES_FILTER="&types=VULNERABILITY"
     ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED"
   }
-  else if (version >= "7.3" && version < "8.1"){
-    // hotspots were stored in the /issues endpoint
+  else if (version >= "7.3" && version < "7.8"){
+    // hotspots are stored in the /issues endpoint but issue status doesn't include TO_REVIEW,IN_REVIEW yet
+    DEFAULT_ISSUES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
+    DEFAULT_RULES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
+    ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED"
+  }
+  else if (version >= "7.8" && version < "8.2"){
+    // hotspots are stored in the /issues endpoint and issue status includes TO_REVIEW,IN_REVIEW
     DEFAULT_ISSUES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
     DEFAULT_RULES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
     ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED,TO_REVIEW,IN_REVIEW"
   }
   else{
-    // version >= 8.1
-    // rules have type SECURITY_HOTSPOT but issues don't (because hotspots are now in a dedicated endpoint)
+    // version >= 8.2
+    // hotspots are in a dedicated endpoint: rules have type SECURITY_HOTSPOT but issues don't
     DEFAULT_ISSUES_FILTER="&types=VULNERABILITY"
     DEFAULT_RULES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
     ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED"
@@ -252,12 +268,14 @@ const hotspotLink = argv.linkIssues == 'true' ?
 
   {
     const pageSize = 500;
+    const maxResults = 10000;
+    const maxPage = maxResults / pageSize;
     let page = 1;
     let nbResults;
 
   do {
       try {
-          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filterRule}`, {
+          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filterRule}${withOrganization}`, {
               agent,
               headers
           });
@@ -274,11 +292,13 @@ const hotspotLink = argv.linkIssues == 'true' ?
           logError("getting rules", error);
           return null;
       }
-    } while (nbResults === pageSize);
+    } while (nbResults === pageSize && page <= maxPage);
   }
 
   {
     const pageSize = 500;
+    const maxResults = 10000;
+    const maxPage = maxResults / pageSize;
     let page = 1;
     let nbResults;
     /** Get all statuses except "REVIEWED". 
@@ -322,27 +342,27 @@ const hotspotLink = argv.linkIssues == 'true' ?
         logError("getting issues", error);  
           return null;
       }
-    } while (nbResults === pageSize);
+    } while (nbResults === pageSize && page <= maxPage);
 
     let hSeverity = "";
-    if (version >= "8.1" && !data.noSecurityHotspot) {
+    if (version >= "8.2" && !data.noSecurityHotspot) {
       // 1) Listing hotspots with hotspots/search
       page = 1;
       do {
         try {
-            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
+            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
                 agent,
                 headers
             });
             page++;
             const json = JSON.parse(response.body);
             nbResults = json.hotspots.length;
-            data.hotspotKeys = json.hotspots.map(hotspot => hotspot.key);
+            data.hotspotKeys.push(...json.hotspots.map(hotspot => hotspot.key));
         } catch (error) {
           logError("getting hotspots list", error);  
             return null;
         }
-      } while (nbResults === pageSize);
+      } while (nbResults === pageSize && page <= maxPage);
 
       // 2) Getting hotspots details with hotspots/show
       for (let hotspotKey of data.hotspotKeys){
