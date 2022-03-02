@@ -1,25 +1,83 @@
 {
   "name": "sonar-report",
   "version": "2.3.1",
-  "main": "index.js",
+  "description": "A sonar report CLI",
+  "main": "./dist/index.js",
+  "type": "module",
+  "files": [
+    "dist/**/*"
+  ],
   "author": "SopraSteria",
+  "license": "GNU",
   "bin": {
-    "sonar-report": "./index.js"
+    "sonar-report": "./dist/index.js"
   },
   "scripts": {
-    "test": "mocha -R mocha-lcov-reporter > coverage.lcov"
+    "test": "mocha -R mocha-lcov-reporter 'src/**/*.test.{ts,tsx}' > coverage.lcov",
+    "build": "tsc",
+    "start": "node ./dist/index.js",
+    "format": "prettier --write '**/*.{ts,tsx,json,css}'",
+    "lint": "eslint 'src/**/*.{js,ts,tsx}' --quiet --fix"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soprasteria/sonar-report.git"
+  },
+  "bugs": {
+    "url": "https://github.com/soprasteria/sonar-report/issues"
+  },
+  "homepage": "https://github.com/soprasteria/sonar-report#readme",
+  "keywords": [
+    "Sonar",
+    "SonarQube",
+    "report",
+    "CLI"
+  ],
   "dependencies": {
     "ejs": "^3.1.6",
-    "got": "^11.8.2",
-    "minimist": "^1.2.0",
-    "tunnel": "0.0.6"
+    "fs": "^0.0.1-security",
+    "got": "^12.0.1",
+    "hpagent": "^0.1.2",
+    "minimist": "^1.2.5",
+    "properties-reader": "^2.2.0",
+    "semver": "^7.3.5"
   },
   "devDependencies": {
-    "mocha": "^9.1.3",
-    "mocha-lcov-reporter": "^1.3.0"
+    "@types/ejs": "^3.1.0",
+    "@types/got": "^9.6.12",
+    "@types/minimist": "^1.2.2",
+    "@types/node": "^17.0.21",
+    "@types/properties-reader": "^2.1.1",
+    "@types/semver": "^7.3.9",
+    "@typescript-eslint/eslint-plugin": "^5.13.0",
+    "@typescript-eslint/parser": "^5.13.0",
+    "eslint": "^8.10.0",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.4",
+    "mocha": "^9.2.1",
+    "mocha-lcov-reporter": "^1.3.0",
+    "prettier": "^2.5.1",
+    "typescript": "^4.6.2"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,json,css}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "publishConfig": {
     "access": "public"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "bracketSpacing": false,
+    "endOfLine": "auto",
+    "singleQuote": true,
+    "trailingComma": "none"
   }
 }
