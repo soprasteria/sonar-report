@@ -19,11 +19,13 @@ $ npm install -g sonar-report
 
 ## Use
 - See all options with:
-```
+
+```bash
 $ sonar-report --help
 SYNOPSIS
     sonar-report [OPTION]...
 ```
+
 - Environment: 
   - http_proxy : the proxy to use to reach the sonarqube instance (`http://<host>:<port>`)
   - NODE_EXTRA_CA_CERTS
@@ -31,6 +33,7 @@ SYNOPSIS
     - the variable holds a file name that contains the certificate in pem format (root CA or full trust chain)
 
 - Example:
+
 ```bash
 # Generate report example
 sonar-report \
@@ -41,7 +44,8 @@ sonar-report \
   --release="1.0.0" \
   --branch="feature/branch" \
   --sinceleakperiod="false" \
-  --allbugs="false" > /tmp/sonar-report_sonar-report.html
+  --allbugs="false"
+  --reportFile=/tmp/sonar-report_sonar-report.html
 
 
 # Open in browser
@@ -49,6 +53,7 @@ xdg-open /tmp/sonar-report_sonar-report.html
 ```
 
 ## Some parameters explained
+
 ### sinceleakperiod
 
 The `sinceleakperiod` parameter activates delta analysis. If `true`, sonar-report will only get the vulnerabilities that were added since a fixed date/version or for a number of days. For this it will:
@@ -64,10 +69,12 @@ More info:
 - In sonarQube, /settings : see leak period
 
 ### allbugs
+
 - "false": only vulnerabilities are exported
 - "true": all bugs are exported
 
 ### fixMissingRule
+
 On some versions of sonar (found on 6.5), the `type` of issue and the `type` of the rule don't match (for example `VULNERABILITY` vs `CODE_SMELL` ). 
 
 In this case, when `allbugs=false`, it's possible that the issue is extracted but not it's rule. What will happen is that the issue has `/` in the description (because the description is the name of the rule).
@@ -77,6 +84,7 @@ To circumvent this issue, the fixMissingRule will extract all rules without any 
 Beware that, with this parameter activated, all the issues linked to the rules displayed may not be displayed. 
 
 ### noSecurityHotspot
+
 Sonar-report will try to find how your sonarqube instance is working with hotspots depending on the running version. However in last resort, you can use the `--noSecurityHotspot="true"` flag in order to deactivate the hotspots processing. 
 
 **Note that you may miss out on some vulnerabilities when using this option if your sonarqube instance does support hotspots.**
@@ -121,7 +129,7 @@ Get the dependencies:
 npm install
 ```
 
-Run with the same command as [Use](#use) but use `node index.js` instead of `sonar-report`
+Run with the same command as [Use](#use) but use `npm run build && npm run start` instead of `sonar-report`
 
 ## Troubleshooting
 
