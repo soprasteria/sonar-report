@@ -66,6 +66,9 @@ DESCRIPTION
     --qualityGateStatus
         Set this flag to include quality gate status in the report. Default is false
         
+    --noRulesInReport
+        Set this flag to omit "Known Security Rules" section from report. Default is false
+
     --vulnerabilityPhrase
         Set to override 'Vulnerability' phrase in the report. Default 'Vulnerability'
             
@@ -109,6 +112,7 @@ function logError(context, error){
     allBugs: (argv.allbugs == 'true'),
     fixMissingRule: (argv.fixMissingRule == 'true'),
     noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
+    noRulesInReport: (argv.noRulesInReport == 'true'),
     vulnerabilityPhrase: argv.vulnerabilityPhrase || 'Vulnerability',
     vulnerabilityPluralPhrase: argv.vulnerabilityPluralPhrase || 'Vulnerabilities',
     // sonar URL without trailing /

@@ -282,6 +282,7 @@
 
 		<% } %>
 
+		<%if (!noRulesInReport) { %>
 		<h3>Known Security Rules</h3>
 		<table style="table-layout: fixed; word-wrap: break-word">
 			<thead>
@@ -305,6 +306,7 @@
 				<% } %>
 			</tbody>
 		</table>
+		<% } %>
 	</div>
 
 	<%if (issues.length > 0) { %>
