@@ -63,6 +63,9 @@ DESCRIPTION
     --noSecurityHotspot
         Set this flag for old versions of sonarQube without security hotspots (<7.3). Default is false
 
+    --qualityGateStatus
+        Set this flag to include quality gate status in the report. Default is false
+        
     --noRulesInReport
         Set this flag to omit "Known Security Rules" section from report. Default is false
 
@@ -201,6 +204,7 @@ function logError(context, error){
   let filterRule = DEFAULT_RULES_FILTER;
   let filterIssue = DEFAULT_ISSUES_FILTER;
   let filterHotspots = "";
+  let filterProjectStatus = "";
 
   if(data.allBugs){
     filterRule = "";
@@ -210,11 +214,13 @@ function logError(context, error){
   if(data.pullRequest){
     filterIssue=filterIssue + "&pullRequest=" + data.pullRequest
     filterHotspots=filterHotspots + "&pullRequest=" + data.pullRequest
+    filterProjectStatus = "&pullRequest=" + data.pullRequest;
   }
 
   if(data.branch){
     filterIssue=filterIssue + "&branch=" + data.branch
     filterHotspots=filterHotspots + "&branch=" + data.branch
+    filterProjectStatus = "&branch=" + data.branch;
   }
 
   if(data.fixMissingRule){
@@ -253,6 +259,25 @@ function logError(context, error){
     });
     const json = JSON.parse(res.getBody());
     data.previousPeriod = json.settings[0].value;
+  }
+
+  if (argv.qualityGateStatus === 'true') {
+      try {
+          const response = await got(`${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}${filterProjectStatus}`, {
+              agent,
+              headers
+          });
+          const json = JSON.parse(response.body);
+          if (json.projectStatus.conditions) {
+              for (const condition of json.projectStatus.conditions) {
+                  condition.metricKey = condition.metricKey.replace(/_/g, " ");
+              }
+          }
+          data.qualityGateStatus = json;
+      } catch (error) {
+          logError("getting quality gate status", error);
+          return null;
+      }
   }
 
   {
@@ -396,7 +421,7 @@ function logError(context, error){
       minor: data.issues.filter(issue => issue.severity === "MINOR").length
     };
   }
-  
+
   ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {
     console.log(str);
   });
