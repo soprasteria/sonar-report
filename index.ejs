@@ -292,14 +292,14 @@
 				</tr>
 			</thead>
 			<tbody>
-				<% for(var i = 0; i < rules.length; i++) { %>
+				<% for (const [ruleKey, rule] of rules) { %>
 				<tr>
 					<td><a
-							href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= rules[i].key %>"><%= rules[i].key %></a>
+							href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>"><%= ruleKey %></a>
 					</td>
 					<td>
 						<details>
-							<%- rules[i].htmlDesc %>
+							<%- rule.htmlDesc %>
 						</details>
 					</td>
 				</tr>
