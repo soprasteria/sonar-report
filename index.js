@@ -65,6 +65,9 @@ DESCRIPTION
 
     --linkIssues
         Set this flag to create links to Sonar from reported issues
+
+    --qualityGateStatus
+        Set this flag to include quality gate status in the report. Default is false
         
     --noRulesInReport
         Set this flag to omit "Known Security Rules" section from report. Default is false
@@ -130,7 +133,7 @@ const hotspotLink = argv.linkIssues == 'true' ?
     sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
     sonarComponent: argv.sonarcomponent,
     sonarOrganization: argv.sonarorganization,
-    rules: [],
+    rules: new Map(),
     issues: [],
     hotspotKeys: []
   };
@@ -216,6 +219,7 @@ const hotspotLink = argv.linkIssues == 'true' ?
   let filterRule = DEFAULT_RULES_FILTER;
   let filterIssue = DEFAULT_ISSUES_FILTER;
   let filterHotspots = "";
+  let filterProjectStatus = "";
 
   if(data.allBugs){
     filterRule = "";
@@ -225,11 +229,13 @@ const hotspotLink = argv.linkIssues == 'true' ?
   if(data.pullRequest){
     filterIssue=filterIssue + "&pullRequest=" + data.pullRequest
     filterHotspots=filterHotspots + "&pullRequest=" + data.pullRequest
+    filterProjectStatus = "&pullRequest=" + data.pullRequest;
   }
 
   if(data.branch){
     filterIssue=filterIssue + "&branch=" + data.branch
     filterHotspots=filterHotspots + "&branch=" + data.branch
+    filterProjectStatus = "&branch=" + data.branch;
   }
 
   if(data.fixMissingRule){
@@ -270,6 +276,25 @@ const hotspotLink = argv.linkIssues == 'true' ?
     data.previousPeriod = json.settings[0].value;
   }
 
+  if (argv.qualityGateStatus === 'true') {
+      try {
+          const response = await got(`${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}${filterProjectStatus}`, {
+              agent,
+              headers
+          });
+          const json = JSON.parse(response.body);
+          if (json.projectStatus.conditions) {
+              for (const condition of json.projectStatus.conditions) {
+                  condition.metricKey = condition.metricKey.replace(/_/g, " ");
+              }
+          }
+          data.qualityGateStatus = json;
+      } catch (error) {
+          logError("getting quality gate status", error);
+          return null;
+      }
+  }
+
   {
     const pageSize = 500;
     const maxResults = 10000;
@@ -279,19 +304,17 @@ const hotspotLink = argv.linkIssues == 'true' ?
 
   do {
       try {
-          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filterRule}${withOrganization}`, {
+          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&f=name,htmlDesc,severity&ps=${pageSize}&p=${page}${filterRule}${withOrganization}`, {
               agent,
               headers
           });
           page++;
           const json = JSON.parse(response.body);
           nbResults = json.rules.length;
-          data.rules = data.rules.concat(json.rules.map(rule => ({
-          key: rule.key,
-          htmlDesc: rule.htmlDesc,
-          name: rule.name,
-          severity: rule.severity
-          })));
+          json.rules.forEach(r => data.rules.set(
+            r.key,
+            (({name, htmlDesc, severity}) => ({name, htmlDesc, severity}))(r)
+          ));
       } catch (error) {
           logError("getting rules", error);
           return null;
@@ -325,7 +348,7 @@ const hotspotLink = argv.linkIssues == 'true' ?
           const json = JSON.parse(response.body);
           nbResults = json.issues.length;
           data.issues = data.issues.concat(json.issues.map(issue => {
-            const rule = data.rules.find(oneRule => oneRule.key === issue.rule);
+            const rule = data.rules.get(issue.rule);
             const message = rule ? rule.name : "/";
             return {
               rule: issue.rule,
