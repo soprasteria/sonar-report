@@ -12,7 +12,7 @@
   "dependencies": {
     "ejs": "^3.1.6",
     "got": "^11.8.2",
-    "minimist": "^1.2.0",
+    "minimist": "^1.2.6",
     "tunnel": "0.0.6"
   },
   "devDependencies": {
