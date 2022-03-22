@@ -253,11 +253,11 @@ function logError(context, error){
   }
 
   if (data.sinceLeakPeriod) {
-    const res = await got(`${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`, {
+    const response = await got(`${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`, {
       agent,
       headers
     });
-    const json = JSON.parse(res.getBody());
+    const json = JSON.parse(response.body);
     data.previousPeriod = json.settings[0].value;
   }
 
