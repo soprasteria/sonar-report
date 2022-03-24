@@ -253,7 +253,7 @@ function logError(context, error){
   }
 
   if (data.sinceLeakPeriod) {
-    const response = await got(`${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`, {
+    const response = await got(`${sonarBaseURL}/api/settings/values?component=${sonarComponent}&keys=sonar.leak.period`, {
       agent,
       headers
     });
