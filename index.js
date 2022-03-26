@@ -98,12 +98,12 @@ function logError(context, error){
 
 const issueLink = argv.linkIssues == 'true' ?
     (data, issue) =>
-        c => `<a href=\"${data.sonarBaseURL}/project/issues?id=${encodeURIComponent(data.sonarComponent)}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(issue.key)}\">${c}</a>` :
+        c => `<a href="${data.sonarBaseURL}/project/issues?${data.branch ? 'branch=' + encodeURIComponent(data.branch) + '&': ''}id=${encodeURIComponent(data.sonarComponent)}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(issue.key)}">${c}</a>` :
     (data, issue) => c => c;
 
 const hotspotLink = argv.linkIssues == 'true' ?
     (data, hotspot) =>
-        c => `<a href=\"${data.sonarBaseURL}/security_hotspots?id=${encodeURIComponent(data.sonarComponent)}&hotspots=${encodeURIComponent(hotspot.key)}\">${c}</a>` :
+        c => `<a href="${data.sonarBaseURL}/security_hotspots?${data.branch ? 'branch=' + encodeURIComponent(data.branch) + '&': ''}id=${encodeURIComponent(data.sonarComponent)}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>` :
     (data, hotspot) => c => c;
 
 (async () => {
@@ -293,6 +293,8 @@ const hotspotLink = argv.linkIssues == 'true' ?
           logError("getting quality gate status", error);
           return null;
       }
+  } else {
+      data.qualityGateStatus = false;
   }
 
   {
