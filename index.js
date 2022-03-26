@@ -3,6 +3,7 @@ const argv = require("minimist")(process.argv.slice(2));
 const got = require('got');
 const tunnel = require('tunnel');
 const ejs = require("ejs");
+const fs = require("fs").promises;
 
 if (argv.help) {
   console.log(`SYNOPSIS
@@ -73,7 +74,10 @@ DESCRIPTION
         Set to override 'Vulnerability' phrase in the report. Default 'Vulnerability'
             
     --vulnerabilityPluralPhrase
-        Set to override 'Vulnerabilities' phrase in the report. Default 'Vulnerabilities'    
+        Set to override 'Vulnerabilities' phrase in the report. Default 'Vulnerabilities'
+        
+    --saveReportJson
+        Save the report data in JSON format. Set to target file name. Default disabled    
     
     --help
         display this help message`);
@@ -418,6 +422,10 @@ function logError(context, error){
       major: data.issues.filter(issue => issue.severity === "MAJOR").length,
       minor: data.issues.filter(issue => issue.severity === "MINOR").length
     };
+  }
+
+  if (argv.saveReportJson) {
+      await fs.writeFile(argv.saveReportJson, JSON.stringify(data));
   }
 
   ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {
