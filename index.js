@@ -67,11 +67,23 @@ DESCRIPTION
     --noSecurityHotspot
         Set this flag for old versions of sonarQube without security hotspots (<7.3). Default is false
 
+    --linkIssues
+        Set this flag to create links to Sonar from reported issues
+
+    --qualityGateStatus
+        Set this flag to include quality gate status in the report. Default is false
+        
+    --noRulesInReport
+        Set this flag to omit "Known Security Rules" section from report. Default is false
+
     --vulnerabilityPhrase
         Set to override 'Vulnerability' phrase in the report. Default 'Vulnerability'
             
     --vulnerabilityPluralPhrase
-        Set to override 'Vulnerabilities' phrase in the report. Default 'Vulnerabilities'    
+        Set to override 'Vulnerabilities' phrase in the report. Default 'Vulnerabilities'
+        
+    --saveReportJson
+        Save the report data in JSON format. Set to target file name. Default disabled    
     
     --help
         display this help message`);
@@ -89,6 +101,17 @@ function logError(context, error){
     "Error while %s : %s - %s - %s - %s - %s", 
     context, errorCode, errorMessage, errorResponseStatusCode, errorResponseStatusMessage,  errorResponseBody);  
 }
+
+
+const issueLink = argv.linkIssues == 'true' ?
+    (data, issue) =>
+        c => `<a href="${data.sonarBaseURL}/project/issues?${data.branch ? 'branch=' + encodeURIComponent(data.branch) + '&': ''}id=${encodeURIComponent(data.sonarComponent)}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(issue.key)}">${c}</a>` :
+    (data, issue) => c => c;
+
+const hotspotLink = argv.linkIssues == 'true' ?
+    (data, hotspot) =>
+        c => `<a href="${data.sonarBaseURL}/security_hotspots?${data.branch ? 'branch=' + encodeURIComponent(data.branch) + '&': ''}id=${encodeURIComponent(data.sonarComponent)}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>` :
+    (data, hotspot) => c => c;
 
 (async () => {
     let stylesheet = await fs.readFile(__dirname + "/style.css", "binary");
@@ -117,12 +140,14 @@ function logError(context, error){
     allBugs: (argv.allbugs == 'true'),
     fixMissingRule: (argv.fixMissingRule == 'true'),
     noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
+    noRulesInReport: (argv.noRulesInReport == 'true'),
     vulnerabilityPhrase: argv.vulnerabilityPhrase || 'Vulnerability',
     vulnerabilityPluralPhrase: argv.vulnerabilityPluralPhrase || 'Vulnerabilities',
     // sonar URL without trailing /
     sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
+    sonarComponent: argv.sonarcomponent,
     sonarOrganization: argv.sonarorganization,
-    rules: [],
+    rules: new Map(),
     issues: [],
     hotspotKeys: []
   };
@@ -130,7 +155,7 @@ function logError(context, error){
   const leakPeriodFilter = data.sinceLeakPeriod ? '&sinceLeakPeriod=true' : '';
   data.deltaAnalysis = data.sinceLeakPeriod ? 'Yes' : 'No';
   const sonarBaseURL = data.sonarBaseURL;
-  const sonarComponent = argv.sonarcomponent;
+  const sonarComponent = data.sonarComponent;
   const withOrganization = data.sonarOrganization ? `&organization=${data.sonarOrganization}` : '';
   var headers = {};
   var version = null;
@@ -208,6 +233,7 @@ function logError(context, error){
   let filterRule = DEFAULT_RULES_FILTER;
   let filterIssue = DEFAULT_ISSUES_FILTER;
   let filterHotspots = "";
+  let filterProjectStatus = "";
 
   if(data.allBugs){
     filterRule = "";
@@ -217,11 +243,13 @@ function logError(context, error){
   if(data.pullRequest){
     filterIssue=filterIssue + "&pullRequest=" + data.pullRequest
     filterHotspots=filterHotspots + "&pullRequest=" + data.pullRequest
+    filterProjectStatus = "&pullRequest=" + data.pullRequest;
   }
 
   if(data.branch){
     filterIssue=filterIssue + "&branch=" + data.branch
     filterHotspots=filterHotspots + "&branch=" + data.branch
+    filterProjectStatus = "&branch=" + data.branch;
   }
 
   if(data.fixMissingRule){
@@ -254,12 +282,33 @@ function logError(context, error){
   }
 
   if (data.sinceLeakPeriod) {
-    const res = await got(`${sonarBaseURL}/api/settings/values?keys=sonar.leak.period`, {
+    const response = await got(`${sonarBaseURL}/api/settings/values?component=${sonarComponent}&keys=sonar.leak.period`, {
       agent,
       headers
     });
-    const json = JSON.parse(res.getBody());
+    const json = JSON.parse(response.body);
     data.previousPeriod = json.settings[0].value;
+  }
+
+  if (argv.qualityGateStatus === 'true') {
+      try {
+          const response = await got(`${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}${filterProjectStatus}`, {
+              agent,
+              headers
+          });
+          const json = JSON.parse(response.body);
+          if (json.projectStatus.conditions) {
+              for (const condition of json.projectStatus.conditions) {
+                  condition.metricKey = condition.metricKey.replace(/_/g, " ");
+              }
+          }
+          data.qualityGateStatus = json;
+      } catch (error) {
+          logError("getting quality gate status", error);
+          return null;
+      }
+  } else {
+      data.qualityGateStatus = false;
   }
 
   {
@@ -271,19 +320,17 @@ function logError(context, error){
 
   do {
       try {
-          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&ps=${pageSize}&p=${page}${filterRule}${withOrganization}`, {
+          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&f=name,htmlDesc,severity&ps=${pageSize}&p=${page}${filterRule}${withOrganization}`, {
               agent,
               headers
           });
           page++;
           const json = JSON.parse(response.body);
           nbResults = json.rules.length;
-          data.rules = data.rules.concat(json.rules.map(rule => ({
-          key: rule.key,
-          htmlDesc: rule.htmlDesc,
-          name: rule.name,
-          severity: rule.severity
-          })));
+          json.rules.forEach(r => data.rules.set(
+            r.key,
+            (({name, htmlDesc, severity}) => ({name, htmlDesc, severity}))(r)
+          ));
       } catch (error) {
           logError("getting rules", error);
           return null;
@@ -317,7 +364,7 @@ function logError(context, error){
           const json = JSON.parse(response.body);
           nbResults = json.issues.length;
           data.issues = data.issues.concat(json.issues.map(issue => {
-            const rule = data.rules.find(oneRule => oneRule.key === issue.rule);
+            const rule = data.rules.get(issue.rule);
             const message = rule ? rule.name : "/";
             return {
               rule: issue.rule,
@@ -325,6 +372,7 @@ function logError(context, error){
               // In this case, get the severity from the rule
               severity: (typeof issue.severity !== 'undefined') ? issue.severity : rule.severity,
               status: issue.status,
+              link: issueLink(data, issue),
               // Take only filename with path, without project name
               component: issue.component.split(':').pop(),
               line: issue.line,
@@ -345,7 +393,7 @@ function logError(context, error){
       page = 1;
       do {
         try {
-            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
+            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${leakPeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
                 agent,
                 headers
             });
@@ -377,6 +425,7 @@ function logError(context, error){
                 rule: hotspot.rule.key,
                 severity: hSeverity,
                 status: hotspot.status,
+                link: hotspotLink(data, hotspot),
                 // Take only filename with path, without project name
                 component: hotspot.component.key.split(':').pop(),
                 line: hotspot.line,
@@ -402,6 +451,10 @@ function logError(context, error){
       major: data.issues.filter(issue => issue.severity === "MAJOR").length,
       minor: data.issues.filter(issue => issue.severity === "MINOR").length
     };
+  }
+
+  if (argv.saveReportJson) {
+      await fs.writeFile(argv.saveReportJson, JSON.stringify(data));
   }
 
   ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {

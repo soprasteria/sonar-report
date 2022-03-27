@@ -12,11 +12,11 @@
   "dependencies": {
     "ejs": "^3.1.6",
     "got": "^11.8.2",
-    "minimist": "^1.2.0",
+    "minimist": "^1.2.6",
     "tunnel": "0.0.6"
   },
   "devDependencies": {
-    "mocha": "^9.1.3",
+    "mocha": "^9.2.2",
     "mocha-lcov-reporter": "^1.3.0"
   },
   "publishConfig": {
