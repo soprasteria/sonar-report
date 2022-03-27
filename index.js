@@ -128,7 +128,6 @@ const hotspotLink = argv.linkIssues == 'true' ?
   var hotspotSeverities = {"HIGH": "CRITICAL", "MEDIUM": "MAJOR", "LOW": "MINOR"};
 
   const data = {
-    stylesheet: stylesheet,
     date: new Date().toDateString(),
     projectName: argv.project,
     applicationName: argv.application,
@@ -457,7 +456,7 @@ const hotspotLink = argv.linkIssues == 'true' ?
       await fs.writeFile(argv.saveReportJson, JSON.stringify(data));
   }
 
-  ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {
+  ejs.renderFile(`${__dirname}/index.ejs`, {...data, stylesheet}, {}, (err, str) => {
     console.log(str);
   });
 })();
