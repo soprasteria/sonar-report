@@ -24,10 +24,10 @@ $ sonar-report --help
 SYNOPSIS
     sonar-report [OPTION]...
 ```
-- Environment: 
+- Environment:
   - http_proxy : the proxy to use to reach the sonarqube instance (`http://<host>:<port>`)
   - NODE_EXTRA_CA_CERTS
-    - the custom certificate authority to trust (troubleshoots `Unable to verify the first certificate`) 
+    - the custom certificate authority to trust (troubleshoots `Unable to verify the first certificate`)
     - the variable holds a file name that contains the certificate in pem format (root CA or full trust chain)
 
 - Example:
@@ -36,13 +36,14 @@ SYNOPSIS
 sonar-report \
   --sonarurl="https://sonarcloud.io" \
   --sonarcomponent="sopra-steria:soprasteria_sonar-report" \
+  --sonarorganization="sopra-steria" \
   --project="Sonar Report" \
   --application="sonar-report" \
   --release="1.0.0" \
   --branch="feature/branch" \
   --sinceleakperiod="false" \
+  --noSecurityHotspot="true" \
   --allbugs="false" > /tmp/sonar-report_sonar-report.html
-
 
 # Open in browser
 xdg-open /tmp/sonar-report_sonar-report.html
@@ -68,26 +69,26 @@ More info:
 - "true": all bugs are exported
 
 ### fixMissingRule
-On some versions of sonar (found on 6.5), the `type` of issue and the `type` of the rule don't match (for example `VULNERABILITY` vs `CODE_SMELL` ). 
+On some versions of sonar (found on 6.5), the `type` of issue and the `type` of the rule don't match (for example `VULNERABILITY` vs `CODE_SMELL` ).
 
 In this case, when `allbugs=false`, it's possible that the issue is extracted but not it's rule. What will happen is that the issue has `/` in the description (because the description is the name of the rule).
 
-To circumvent this issue, the fixMissingRule will extract all rules without any filter on the `type`. 
+To circumvent this issue, the fixMissingRule will extract all rules without any filter on the `type`.
 
-Beware that, with this parameter activated, all the issues linked to the rules displayed may not be displayed. 
+Beware that, with this parameter activated, all the issues linked to the rules displayed may not be displayed.
 
 ### noSecurityHotspot
-Sonar-report will try to find how your sonarqube instance is working with hotspots depending on the running version. However in last resort, you can use the `--noSecurityHotspot="true"` flag in order to deactivate the hotspots processing. 
+Sonar-report will try to find how your sonarqube instance is working with hotspots depending on the running version. However in last resort, you can use the `--noSecurityHotspot="true"` flag in order to deactivate the hotspots processing.
 
 **Note that you may miss out on some vulnerabilities when using this option if your sonarqube instance does support hotspots.**
 
 General information about security hotspots: https://docs.sonarqube.org/latest/user-guide/security-hotspots/
 
-Here's a brief history of sonarqube dealing with hotspots. 
+Here's a brief history of sonarqube dealing with hotspots.
 
 - version < 7.3
   - hotspots don't exist
-- 7.3 <= version < 7.8: 
+- 7.3 <= version < 7.8:
   - hotspots are stored in the /issues endpoint
   - issue status doesn't include TO_REVIEW, IN_REVIEW yet
   - issues type includes SECURITY_HOTSPOT
@@ -96,18 +97,18 @@ Here's a brief history of sonarqube dealing with hotspots.
   - hotspots are stored in the /issues endpoint
   - issue status includes TO_REVIEW, IN_REVIEW
   - issues type includes SECURITY_HOTSPOT
-- version >= 8.2 
+- version >= 8.2
   - hotspots are in a dedicated endpoint /hotspots
   - issues status don't include anymore TO_REVIEW, IN_REVIEW
   - issues type don't include anymore SECURITY_HOTSPOT
 
 
-A few notes: 
+A few notes:
 - this behavior was verified using the embedded web_api documentation from dockerhub community distributions
 - Versions 7.2 and 7.3 couldn't be verified as they are not present on dockerhub (and sonarqube doesn't seem to be publishing the API documentation per version)
 - some implementations may not work as expected: for example sonarcloud v8.0 doesn't know about hotspots. When using sonarcloud v8.0 please use the `--noSecurityHotspot="true"` flag
 
-To verify how your instance deals with hotspots, check: 
+To verify how your instance deals with hotspots, check:
 - ${sonarBaseURL}/api/system/status
 - ${sonarBaseURL}/web_api/api/issues/search (check Possible values of parameters `statuses`, `types`)
 - ${sonarBaseURL}/web_api/api/rules/search (check Possible values of parameter `types`)

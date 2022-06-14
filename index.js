@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 const argv = require("minimist")(process.argv.slice(2));
-const got = require('got');
-const tunnel = require('tunnel');
 const ejs = require("ejs");
 const fs = require("fs").promises;
+const getProxyForUrl = require("proxy-from-env").getProxyForUrl;
+const got = require("got");
+const hpagent = require("hpagent");
+const propertiesToJson = require("properties-file").propertiesToJson;
 
 if (argv.help) {
   console.log(`SYNOPSIS
@@ -15,10 +17,10 @@ USAGE
 DESCRIPTION
     Generate a vulnerability report from a SonarQube instance.
 
-    Environment: 
+    Environment:
     http_proxy : the proxy to use to reach the sonarqube instance (http://<host>:<port>)
 
-    Parameters: 
+    Parameters:
     --project
         name of the project, displayed in the header of the generated report
 
@@ -69,155 +71,198 @@ DESCRIPTION
 
     --qualityGateStatus
         Set this flag to include quality gate status in the report. Default is false
-        
+
     --noRulesInReport
         Set this flag to omit "Known Security Rules" section from report. Default is false
 
     --vulnerabilityPhrase
         Set to override 'Vulnerability' phrase in the report. Default 'Vulnerability'
-            
+
     --vulnerabilityPluralPhrase
         Set to override 'Vulnerabilities' phrase in the report. Default 'Vulnerabilities'
-        
+
     --saveReportJson
-        Save the report data in JSON format. Set to target file name. Default disabled    
-    
+        Save the report data in JSON format. Set to target file name. Default disabled
+
+    --sonarPropertiesFile
+        To use a sonar properties file. Default sonar-project.properties
+
     --help
         display this help message`);
   process.exit();
 }
 
-function logError(context, error){
-  var errorCode = (typeof error.code === 'undefined' || error.code === null) ? "" : error.code;
-  var errorMessage = (typeof error.message === 'undefined' || error.message === null) ? "" : error.message;
-  var errorResponseStatusCode = (typeof error.response === 'undefined' || error.response === null || error.response.statusCode === 'undefined' || error.response.statusCode === null ) ? "" : error.response.statusCode;
-  var errorResponseStatusMessage = (typeof error.response === 'undefined' || error.response === null || error.response.statusMessage === 'undefined' || error.response.statusMessage === null ) ? "" : error.response.statusMessage;
-  var errorResponseBody = (typeof error.response === 'undefined' || error.response === null || error.response.body === 'undefined' || error.response.body === null ) ? "" : error.response.body;
+function logError(context, error) {
+  var errorCode =
+    typeof error.code === "undefined" || error.code === null ? "" : error.code;
+  var errorMessage =
+    typeof error.message === "undefined" || error.message === null
+      ? ""
+      : error.message;
+  var errorResponseStatusCode =
+    typeof error.response === "undefined" ||
+    error.response === null ||
+    error.response.statusCode === "undefined" ||
+    error.response.statusCode === null
+      ? ""
+      : error.response.statusCode;
+  var errorResponseStatusMessage =
+    typeof error.response === "undefined" ||
+    error.response === null ||
+    error.response.statusMessage === "undefined" ||
+    error.response.statusMessage === null
+      ? ""
+      : error.response.statusMessage;
+  var errorResponseBody =
+    typeof error.response === "undefined" ||
+    error.response === null ||
+    error.response.body === "undefined" ||
+    error.response.body === null
+      ? ""
+      : error.response.body;
 
   console.error(
-    "Error while %s : %s - %s - %s - %s - %s", 
-    context, errorCode, errorMessage, errorResponseStatusCode, errorResponseStatusMessage,  errorResponseBody);  
+    "Error while %s : %s - %s - %s - %s - %s",
+    context,
+    errorCode,
+    errorMessage,
+    errorResponseStatusCode,
+    errorResponseStatusMessage,
+    errorResponseBody
+  );
 }
 
+const issueLink =
+  argv.linkIssues == "true"
+    ? (data, issue) => (c) =>
+        `<a href="${data.sonarBaseURL}/project/issues?${
+          data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+        }id=${encodeURIComponent(
+          data.sonarComponent
+        )}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(
+          issue.key
+        )}">${c}</a>`
+    : (data, issue) => (c) => c;
 
-const issueLink = argv.linkIssues == 'true' ?
-    (data, issue) =>
-        c => `<a href="${data.sonarBaseURL}/project/issues?${data.branch ? 'branch=' + encodeURIComponent(data.branch) + '&': ''}id=${encodeURIComponent(data.sonarComponent)}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(issue.key)}">${c}</a>` :
-    (data, issue) => c => c;
-
-const hotspotLink = argv.linkIssues == 'true' ?
-    (data, hotspot) =>
-        c => `<a href="${data.sonarBaseURL}/security_hotspots?${data.branch ? 'branch=' + encodeURIComponent(data.branch) + '&': ''}id=${encodeURIComponent(data.sonarComponent)}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>` :
-    (data, hotspot) => c => c;
+const hotspotLink =
+  argv.linkIssues == "true"
+    ? (data, hotspot) => (c) =>
+        `<a href="${data.sonarBaseURL}/security_hotspots?${
+          data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+        }id=${encodeURIComponent(
+          data.sonarComponent
+        )}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>`
+    : (data, hotspot) => (c) => c;
 
 (async () => {
   var severity = new Map();
-  severity.set('MINOR', 0);
-  severity.set('MAJOR', 1);
-  severity.set('CRITICAL', 2);
-  severity.set('BLOCKER', 3);
-  var hotspotSeverities = {"HIGH": "CRITICAL", "MEDIUM": "MAJOR", "LOW": "MINOR"};
+  severity.set("MINOR", 0);
+  severity.set("MAJOR", 1);
+  severity.set("CRITICAL", 2);
+  severity.set("BLOCKER", 3);
+  var hotspotSeverities = { HIGH: "CRITICAL", MEDIUM: "MAJOR", LOW: "MINOR" };
+
+  let properties = [];
+  try {
+    properties = propertiesToJson(
+      argv.sonarPropertiesFile || "sonar-project.properties"
+    );
+  } catch (e) {}
 
   const data = {
     date: new Date().toDateString(),
-    projectName: argv.project,
+    projectName: argv.project || properties["sonar.projectName"],
     applicationName: argv.application,
     releaseName: argv.release,
     pullRequest: argv.pullrequest,
     branch: argv.branch,
-    sinceLeakPeriod: (argv.sinceleakperiod == 'true'),
-    previousPeriod: '',
-    allBugs: (argv.allbugs == 'true'),
-    fixMissingRule: (argv.fixMissingRule == 'true'),
-    noSecurityHotspot: (argv.noSecurityHotspot == 'true'),
-    noRulesInReport: (argv.noRulesInReport == 'true'),
-    vulnerabilityPhrase: argv.vulnerabilityPhrase || 'Vulnerability',
-    vulnerabilityPluralPhrase: argv.vulnerabilityPluralPhrase || 'Vulnerabilities',
+    sinceLeakPeriod: argv.sinceleakperiod == "true",
+    previousPeriod: "",
+    allBugs: argv.allbugs == "true",
+    fixMissingRule: argv.fixMissingRule == "true",
+    noSecurityHotspot: argv.noSecurityHotspot == "true",
+    noRulesInReport: argv.noRulesInReport == "true",
+    vulnerabilityPhrase: argv.vulnerabilityPhrase || "Vulnerability",
+    vulnerabilityPluralPhrase:
+      argv.vulnerabilityPluralPhrase || "Vulnerabilities",
     // sonar URL without trailing /
-    sonarBaseURL: argv.sonarurl.replace(/\/$/, ""),
-    sonarComponent: argv.sonarcomponent,
+    sonarBaseURL: argv.sonarurl
+      ? argv.sonarurl.replace(/\/$/, "")
+      : properties["sonar.host.url"],
+    sonarComponent: argv.sonarcomponent || properties["projectKey"],
     sonarOrganization: argv.sonarorganization,
     rules: new Map(),
     issues: [],
-    hotspotKeys: []
+    hotspotKeys: [],
   };
 
-  const leakPeriodFilter = data.sinceLeakPeriod ? '&sinceLeakPeriod=true' : '';
-  data.deltaAnalysis = data.sinceLeakPeriod ? 'Yes' : 'No';
+  const leakPeriodFilter = data.sinceLeakPeriod ? "&sinceLeakPeriod=true" : "";
+  data.deltaAnalysis = data.sinceLeakPeriod ? "Yes" : "No";
   const sonarBaseURL = data.sonarBaseURL;
   const sonarComponent = data.sonarComponent;
-  const withOrganization = data.sonarOrganization ? `&organization=${data.sonarOrganization}` : '';
+  const withOrganization = data.sonarOrganization
+    ? `&organization=${data.sonarOrganization}`
+    : "";
   var headers = {};
   var version = null;
-  
-  var proxy = null;
-  // the tunnel agent if a forward proxy is required, or remains null
-  var agent = null;
+
+  // the got agent if a forward proxy is required, or remains null
+  let agent = null;
   // Preparing configuration if behind proxy
-  if (process.env.http_proxy){
-    proxy = process.env.http_proxy;
-    var url = new URL(proxy);
-    var proxyHost = url.hostname;
-    var proxyPort = url.port;
-    console.error('using proxy %s:%s', proxyHost, proxyPort);
+  const proxy = getProxyForUrl(sonarBaseURL);
+  if (proxy) {
+    const url = new URL(proxy);
+    console.error("using proxy: %s", url);
     agent = {
-      https: tunnel.httpsOverHttp({
-          proxy: {
-              host: proxyHost,
-              port: proxyPort
-          }
-      })
+      https: new hpagent.HttpsProxyAgent({
+        proxy: proxy,
+      }),
     };
+  } else {
+    console.error("No proxy configuration detected");
   }
-  else{
-    console.error('No proxy configuration detected');
-  }
-  
-  //get SonarQube version
+
+  // get SonarQube version
   try {
     const res = await got(`${sonarBaseURL}/api/system/status`, {
       agent,
-      headers
+      headers,
     });
     const json = JSON.parse(res.body);
     version = json.version;
     console.error("sonarqube version: %s", version);
   } catch (error) {
-      logError("getting version", error);
-      return null;
+    logError("getting version", error);
+    return null;
   }
 
-  let DEFAULT_ISSUES_FILTER="";
-  let DEFAULT_RULES_FILTER="";
-  let ISSUE_STATUSES="";
-  let HOTSPOT_STATUSES="TO_REVIEW"
+  let DEFAULT_ISSUES_FILTER = "";
+  let DEFAULT_RULES_FILTER = "";
+  let ISSUE_STATUSES = "";
+  let HOTSPOT_STATUSES = "TO_REVIEW";
 
-  if(data.noSecurityHotspot || version < "7.3"){
+  if (data.noSecurityHotspot || version < "7.3") {
     // hotspots don't exist
-    DEFAULT_ISSUES_FILTER="&types=VULNERABILITY"
-    DEFAULT_RULES_FILTER="&types=VULNERABILITY"
-    ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED"
-  }
-  else if (version >= "7.3" && version < "7.8"){
+    DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY";
+    DEFAULT_RULES_FILTER = "&types=VULNERABILITY";
+    ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED";
+  } else if (version >= "7.3" && version < "7.8") {
     // hotspots are stored in the /issues endpoint but issue status doesn't include TO_REVIEW,IN_REVIEW yet
-    DEFAULT_ISSUES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
-    DEFAULT_RULES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
-    ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED"
-  }
-  else if (version >= "7.8" && version < "8.2"){
+    DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
+    DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
+    ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED";
+  } else if (version >= "7.8" && version < "8.2") {
     // hotspots are stored in the /issues endpoint and issue status includes TO_REVIEW,IN_REVIEW
-    DEFAULT_ISSUES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
-    DEFAULT_RULES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
-    ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED,TO_REVIEW,IN_REVIEW"
-  }
-  else{
+    DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
+    DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
+    ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED,TO_REVIEW";
+  } else {
     // version >= 8.2
     // hotspots are in a dedicated endpoint: rules have type SECURITY_HOTSPOT but issues don't
-    DEFAULT_ISSUES_FILTER="&types=VULNERABILITY"
-    DEFAULT_RULES_FILTER="&types=VULNERABILITY,SECURITY_HOTSPOT"
-    ISSUE_STATUSES="OPEN,CONFIRMED,REOPENED"
+    DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY";
+    DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
+    ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED";
   }
-  
 
   // filters for getting rules and issues
   let filterRule = DEFAULT_RULES_FILTER;
@@ -225,80 +270,92 @@ const hotspotLink = argv.linkIssues == 'true' ?
   let filterHotspots = "";
   let filterProjectStatus = "";
 
-  if(data.allBugs){
+  if (data.allBugs) {
     filterRule = "";
     filterIssue = "";
   }
 
-  if(data.pullRequest){
-    filterIssue=filterIssue + "&pullRequest=" + data.pullRequest
-    filterHotspots=filterHotspots + "&pullRequest=" + data.pullRequest
+  if (data.pullRequest) {
+    filterIssue = filterIssue + "&pullRequest=" + data.pullRequest;
+    filterHotspots = filterHotspots + "&pullRequest=" + data.pullRequest;
     filterProjectStatus = "&pullRequest=" + data.pullRequest;
   }
 
-  if(data.branch){
-    filterIssue=filterIssue + "&branch=" + data.branch
-    filterHotspots=filterHotspots + "&branch=" + data.branch
+  if (data.branch) {
+    filterIssue = filterIssue + "&branch=" + data.branch;
+    filterHotspots = filterHotspots + "&branch=" + data.branch;
     filterProjectStatus = "&branch=" + data.branch;
   }
 
-  if(data.fixMissingRule){
+  if (data.fixMissingRule) {
     filterRule = "";
   }
 
-
-  const username = argv.sonarusername;
-  const password = argv.sonarpassword;
+  const username = argv.sonarusername || properties["sonar.login"];
+  const password = argv.sonarpassword || properties["sonar.password"];
   const token = argv.sonartoken;
   if (username && password) {
     // Form authentication with username/password
     try {
-      const response = await got.post(`${sonarBaseURL}/api/authentication/login`, {
+      const response = await got.post(
+        `${sonarBaseURL}/api/authentication/login`,
+        {
           agent,
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: `login=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
-      });
-      headers["Cookie"] = response.headers['set-cookie'].map(cookie => cookie.split(';')[0]).join('; ');
+          body: `login=${encodeURIComponent(
+            username
+          )}&password=${encodeURIComponent(password)}`,
+        }
+      );
+      headers["Cookie"] = response.headers["set-cookie"]
+        .map((cookie) => cookie.split(";")[0])
+        .join("; ");
     } catch (error) {
-        logError("logging in", error);
-        return null;
+      logError("logging in", error);
+      return null;
     }
-    
   } else if (token) {
     // Basic authentication with user token
-    headers["Authorization"] = "Basic " + Buffer.from(token + ":").toString("base64");
+    headers["Authorization"] =
+      "Basic " + Buffer.from(token + ":").toString("base64");
   }
 
   if (data.sinceLeakPeriod) {
-    const response = await got(`${sonarBaseURL}/api/settings/values?component=${sonarComponent}&keys=sonar.leak.period`, {
-      agent,
-      headers
-    });
+    const response = await got(
+      `${sonarBaseURL}/api/settings/values?component=${sonarComponent}&keys=sonar.leak.period`,
+      {
+        agent,
+        headers,
+      }
+    );
     const json = JSON.parse(response.body);
     data.previousPeriod = json.settings[0].value;
   }
 
-  if (argv.qualityGateStatus === 'true') {
-      try {
-          const response = await got(`${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}${filterProjectStatus}`, {
-              agent,
-              headers
-          });
-          const json = JSON.parse(response.body);
-          if (json.projectStatus.conditions) {
-              for (const condition of json.projectStatus.conditions) {
-                  condition.metricKey = condition.metricKey.replace(/_/g, " ");
-              }
-          }
-          data.qualityGateStatus = json;
-      } catch (error) {
-          logError("getting quality gate status", error);
-          return null;
+  if (argv.qualityGateStatus === "true") {
+    try {
+      const response = await got(
+        `${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}${filterProjectStatus}`,
+        {
+          agent,
+          headers,
+        }
+      );
+      const json = JSON.parse(response.body);
+      if (json.projectStatus.conditions) {
+        for (const condition of json.projectStatus.conditions) {
+          condition.metricKey = condition.metricKey.replace(/_/g, " ");
+        }
       }
+      data.qualityGateStatus = json;
+    } catch (error) {
+      logError("getting quality gate status", error);
+      return null;
+    }
   } else {
-      data.qualityGateStatus = false;
+    data.qualityGateStatus = false;
   }
 
   {
@@ -308,22 +365,29 @@ const hotspotLink = argv.linkIssues == 'true' ?
     let page = 1;
     let nbResults;
 
-  do {
+    do {
       try {
-          const response = await got(`${sonarBaseURL}/api/rules/search?activation=true&f=name,htmlDesc,severity&ps=${pageSize}&p=${page}${filterRule}${withOrganization}`, {
-              agent,
-              headers
-          });
-          page++;
-          const json = JSON.parse(response.body);
-          nbResults = json.rules.length;
-          json.rules.forEach(r => data.rules.set(
+        const response = await got(
+          `${sonarBaseURL}/api/rules/search?activation=true&f=name,htmlDesc,severity&ps=${pageSize}&p=${page}${filterRule}${withOrganization}`,
+          {
+            agent,
+            headers,
+          }
+        );
+        page++;
+        const json = JSON.parse(response.body);
+        nbResults = json.rules.length;
+        json.rules.forEach((r) =>
+          data.rules.set(
             r.key,
-            (({name, htmlDesc, severity}) => ({name, htmlDesc, severity}))(r)
-          ));
+            (({ name, htmlDesc, severity }) => ({ name, htmlDesc, severity }))(
+              r
+            )
+          )
+        );
       } catch (error) {
-          logError("getting rules", error);
-          return null;
+        logError("getting rules", error);
+        return null;
       }
     } while (nbResults === pageSize && page <= maxPage);
   }
@@ -334,8 +398,8 @@ const hotspotLink = argv.linkIssues == 'true' ?
     const maxPage = maxResults / pageSize;
     let page = 1;
     let nbResults;
-    /** Get all statuses except "REVIEWED". 
-     * Actions in sonarQube vs status in security hotspot (sonar >= 7): 
+    /** Get all statuses except "REVIEWED".
+     * Actions in sonarQube vs status in security hotspot (sonar >= 7):
      * - resolve as reviewed
      *    "resolution": "FIXED"
      *    "status": "REVIEWED"
@@ -346,34 +410,42 @@ const hotspotLink = argv.linkIssues == 'true' ?
      */
     do {
       try {
-          const response = await got(`${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`, {
-              agent,
-              headers
-          });
-          page++;
-          const json = JSON.parse(response.body);
-          nbResults = json.issues.length;
-          data.issues = data.issues.concat(json.issues.map(issue => {
+        const response = await got(
+          `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`,
+          {
+            agent,
+            headers,
+          }
+        );
+        page++;
+        const json = JSON.parse(response.body);
+        nbResults = json.issues.length;
+        data.issues = data.issues.concat(
+          json.issues.map((issue) => {
             const rule = data.rules.get(issue.rule);
             const message = rule ? rule.name : "/";
             return {
               rule: issue.rule,
               // For security hotspots, the vulnerabilities show without a severity before they are confirmed
               // In this case, get the severity from the rule
-              severity: (typeof issue.severity !== 'undefined') ? issue.severity : rule.severity,
+              severity:
+                typeof issue.severity !== "undefined"
+                  ? issue.severity
+                  : rule.severity,
               status: issue.status,
               link: issueLink(data, issue),
               // Take only filename with path, without project name
-              component: issue.component.split(':').pop(),
+              component: issue.component.split(":").pop(),
               line: issue.line,
               description: message,
               message: issue.message,
-              key: issue.key
+              key: issue.key,
             };
-          }));
+          })
+        );
       } catch (error) {
-        logError("getting issues", error);  
-          return null;
+        logError("getting issues", error);
+        return null;
       }
     } while (nbResults === pageSize && page <= maxPage);
 
@@ -383,68 +455,77 @@ const hotspotLink = argv.linkIssues == 'true' ?
       page = 1;
       do {
         try {
-            const response = await got(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${leakPeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`, {
-                agent,
-                headers
-            });
-            page++;
-            const json = JSON.parse(response.body);
-            nbResults = json.hotspots.length;
-            data.hotspotKeys.push(...json.hotspots.map(hotspot => hotspot.key));
+          const response = await got(
+            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${leakPeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`,
+            {
+              agent,
+              headers,
+            }
+          );
+          page++;
+          const json = JSON.parse(response.body);
+          nbResults = json.hotspots.length;
+          data.hotspotKeys.push(...json.hotspots.map((hotspot) => hotspot.key));
         } catch (error) {
-          logError("getting hotspots list", error);  
-            return null;
+          logError("getting hotspots list", error);
+          return null;
         }
       } while (nbResults === pageSize && page <= maxPage);
 
       // 2) Getting hotspots details with hotspots/show
-      for (let hotspotKey of data.hotspotKeys){
+      for (let hotspotKey of data.hotspotKeys) {
         try {
-            const response = await got(`${sonarBaseURL}/api/hotspots/show?hotspot=${hotspotKey}`, {
-                agent,
-                headers
-            });
-            const hotspot = JSON.parse(response.body);
-            hSeverity = hotspotSeverities[hotspot.rule.vulnerabilityProbability];
-            if (hSeverity === undefined) {
-              hSeverity = "MAJOR";
-              console.error("Unknown hotspot severity: %s", hotspot.vulnerabilityProbability);
+          const response = await got(
+            `${sonarBaseURL}/api/hotspots/show?hotspot=${hotspotKey}`,
+            {
+              agent,
+              headers,
             }
-            data.issues.push(
-              {
-                rule: hotspot.rule.key,
-                severity: hSeverity,
-                status: hotspot.status,
-                link: hotspotLink(data, hotspot),
-                // Take only filename with path, without project name
-                component: hotspot.component.key.split(':').pop(),
-                line: hotspot.line,
-                description: hotspot.rule ? hotspot.rule.name : "/",
-                message: hotspot.message,
-                key: hotspot.key
-              });
+          );
+          const hotspot = JSON.parse(response.body);
+          hSeverity = hotspotSeverities[hotspot.rule.vulnerabilityProbability];
+          if (hSeverity === undefined) {
+            hSeverity = "MAJOR";
+            console.error(
+              "Unknown hotspot severity: %s",
+              hotspot.vulnerabilityProbability
+            );
+          }
+          data.issues.push({
+            rule: hotspot.rule.key,
+            severity: hSeverity,
+            status: hotspot.status,
+            link: hotspotLink(data, hotspot),
+            // Take only filename with path, without project name
+            component: hotspot.component.key.split(":").pop(),
+            line: hotspot.line,
+            description: hotspot.rule ? hotspot.rule.name : "/",
+            message: hotspot.message,
+            key: hotspot.key,
+          });
         } catch (error) {
-          logError("getting hotspots details", error);  
-            return null;
+          logError("getting hotspots details", error);
+          return null;
         }
       }
     }
 
-
     data.issues.sort(function (a, b) {
       return severity.get(b.severity) - severity.get(a.severity);
     });
-  
+
     data.summary = {
-      blocker: data.issues.filter(issue => issue.severity === "BLOCKER").length,
-      critical: data.issues.filter(issue => issue.severity === "CRITICAL").length,
-      major: data.issues.filter(issue => issue.severity === "MAJOR").length,
-      minor: data.issues.filter(issue => issue.severity === "MINOR").length
+      blocker: data.issues.filter((issue) => issue.severity === "BLOCKER")
+        .length,
+      critical: data.issues.filter((issue) => issue.severity === "CRITICAL")
+        .length,
+      major: data.issues.filter((issue) => issue.severity === "MAJOR").length,
+      minor: data.issues.filter((issue) => issue.severity === "MINOR").length,
     };
   }
 
   if (argv.saveReportJson) {
-      await fs.writeFile(argv.saveReportJson, JSON.stringify(data));
+    await fs.writeFile(argv.saveReportJson, JSON.stringify(data));
   }
 
   ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {

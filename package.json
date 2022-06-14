@@ -1,6 +1,6 @@
 {
   "name": "sonar-report",
-  "version": "2.3.1",
+  "version": "2.5.0",
   "main": "index.js",
   "author": "SopraSteria",
   "bin": {
@@ -11,12 +11,14 @@
   },
   "dependencies": {
     "ejs": "^3.1.8",
-    "got": "^11.8.2",
+    "got": "^11.8.5",
+    "hpagent": "^1.0.0",
     "minimist": "^1.2.6",
-    "tunnel": "0.0.6"
+    "properties-file": "^2.0.1",
+    "proxy-from-env": "^1.1.0"
   },
   "devDependencies": {
-    "mocha": "^9.2.2",
+    "mocha": "^10.0.0",
     "mocha-lcov-reporter": "^1.3.0"
   },
   "publishConfig": {
