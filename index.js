@@ -87,6 +87,9 @@ DESCRIPTION
     --sonarPropertiesFile
         To use a sonar properties file. Default sonar-project.properties
 
+    --stylesheetFile
+        CSS stylesheet file path
+
     --help
         display this help message`);
   process.exit();
@@ -169,6 +172,10 @@ const hotspotLink =
     );
   } catch (e) {}
 
+  const stylesheetFile = (argv.stylesheetFile || __dirname + "/style.css")
+  const stylesheet = await fs.readFile(stylesheetFile, "binary");
+  console.error('using stylesheet file: %s', stylesheetFile);
+
   const data = {
     date: new Date().toDateString(),
     projectName: argv.project || properties["sonar.projectName"],
@@ -182,6 +189,7 @@ const hotspotLink =
     fixMissingRule: argv.fixMissingRule == "true",
     noSecurityHotspot: argv.noSecurityHotspot == "true",
     noRulesInReport: argv.noRulesInReport == "true",
+    stylesheet: stylesheet,
     vulnerabilityPhrase: argv.vulnerabilityPhrase || "Vulnerability",
     vulnerabilityPluralPhrase:
       argv.vulnerabilityPluralPhrase || "Vulnerabilities",
