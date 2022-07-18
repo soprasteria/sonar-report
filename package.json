@@ -14,7 +14,7 @@
     "got": "^11.8.5",
     "hpagent": "^1.0.0",
     "minimist": "^1.2.6",
-    "properties-file": "^2.0.5",
+    "properties-file": "^2.0.6",
     "proxy-from-env": "^1.1.0"
   },
   "devDependencies": {
