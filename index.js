@@ -197,7 +197,7 @@ const hotspotLink =
     sonarBaseURL: argv.sonarurl
       ? argv.sonarurl.replace(/\/$/, "")
       : properties["sonar.host.url"],
-    sonarComponent: argv.sonarcomponent || properties["projectKey"],
+    sonarComponent: argv.sonarcomponent || properties["sonar.projectKey"],
     sonarOrganization: argv.sonarorganization,
     rules: new Map(),
     issues: [],
