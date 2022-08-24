@@ -1,7 +1,8 @@
 **
-!LICENSE
 !index.ejs
 !index.js
-!README.md
+!LICENSE
 !package.json
+!README.md
 !style.css
+!summary.txt.ejs

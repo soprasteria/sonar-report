@@ -15,7 +15,8 @@
     "got": "^11.8.5",
     "hpagent": "^1.0.0",
     "properties-file": "^2.1.1",
-    "proxy-from-env": "^1.1.0"
+    "proxy-from-env": "^1.1.0",
+    "semver": "^7.3.7"
   },
   "devDependencies": {
     "mocha": "^10.0.0",
