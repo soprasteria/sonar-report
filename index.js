@@ -1,99 +1,50 @@
 #!/usr/bin/env node
-const argv = require("minimist")(process.argv.slice(2));
+const { program, Option } = require('commander');
+const { promises: fs, existsSync } = require("fs");
+const { resolve } = require('path');
 const ejs = require("ejs");
-const fs = require("fs").promises;
 const getProxyForUrl = require("proxy-from-env").getProxyForUrl;
 const got = require("got");
 const hpagent = require("hpagent");
 const propertiesToJson = require("properties-file").propertiesToJson;
+const semver = require('semver');
 
-if (argv.help) {
-  console.log(`SYNOPSIS
-    sonar-report [OPTION]...
+program
+  .description('Generate a vulnerability report from a SonarQube instance.')
+  .addOption(new Option('--http-proxy', 'the proxy to use to reach the sonarqube instance (http://<host>:<port>)').env('http_proxy'))
+  .option('--project <project>', 'name of the project, displayed in the header of the generated report')
+  .option('--application <application>', 'name of the application, displayed in the header of the generated report')
+  .option('--release <release>', 'name of the release, displayed in the header of the generated report')
+  .option('--branch <branch>', 'Branch in Sonarqube that we want to get the issues for')
+  .option('--pullrequest <pr>', 'pull request ID in Sonarqube for which to get the issues/hotspots')
+  .option('--sonarurl <url>', 'base URL of the SonarQube instance to query from')
+  .option('--sonarcomponent <component>', 'id of the component to query from')
+  .option('--sonarusername <username>', 'auth username')
+  .option('--sonarpassword <password>', 'auth password')
+  .option('--sonartoken <token>', 'auth token')
+  .option('--sonarorganization <organization>', 'name of the sonarcloud.io organization')
+  .option('--since-leak-period', 'flag to indicate if the reporting should be done since the last sonarqube leak period (delta analysis).', false)
+  .option('--allbugs', 'flag to indicate if the report should contain all bugs, not only vulnerabilities.', false)
+  .option('--fix-missing-rule', 'Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true.', false)
+  .option('--no-security-hotspot', 'Set this flag for old versions of sonarQube without security hotspots (<7.3).', false)
+  .option('--link-issues', 'Set this flag to create links to Sonar from reported issues', false)
+  .option('--quality-gate-status', 'Set this flag to include quality gate status in the report.', false)
+  .option('--no-rules-in-report', 'Set this flag to omit "Known Security Rules" section from report.', false)
+  .option('--vulnerability-phrase <phrase>', "Set to override 'Vulnerability' phrase in the report.", 'Vulnerability')
+  .option('--vulnerability-plural-phrase <phrase>', "Set to override 'Vulnerabilities' phrase in the report. ", 'Vulnerabilities')
+  .option('--save-report-json <filename>', 'Save the report data in JSON format. Set to target file name', '')
+  .option('--sonar-properties-file <filename>', 'To use a sonar properties file.', 'sonar-project.properties')
+  .option('--stylesheet-file <filename>', 'CSS stylesheet file path. (default: provided stylesheet)')
+  .option('--ejs-file <filename>', 'EJS template file path. (default: built in template)', 'index.ejs')
+  .option('--output <filename>', 'Output report file path. (default: report.html)', 'report.html')
+  .option('--exit-code', 'Exit with non zero if issues were found')
+  .addHelpText('after', `
+Example
+  sonar-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --since-leak-period=true > /tmp/sonar-report`);
 
-USAGE
-    sonar-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --sinceleakperiod=true > /tmp/sonar-report
+program.parse();
 
-DESCRIPTION
-    Generate a vulnerability report from a SonarQube instance.
-
-    Environment:
-    http_proxy : the proxy to use to reach the sonarqube instance (http://<host>:<port>)
-
-    Parameters:
-    --project
-        name of the project, displayed in the header of the generated report
-
-    --application
-        name of the application, displayed in the header of the generated report
-
-    --release
-        name of the release, displayed in the header of the generated report
-
-    --branch
-        Branch in Sonarqube that we want to get the issues for
-
-    --pullrequest
-        pull request ID in Sonarqube for which to get the issues/hotspots
-
-    --sonarurl
-        base URL of the SonarQube instance to query from
-
-    --sonarcomponent
-        id of the component to query from
-
-    --sonarusername
-        auth username
-
-    --sonarpassword
-        auth password
-
-    --sonartoken
-        auth token
-
-    --sonarorganization
-        name of the sonarcloud.io organization
-
-    --sinceleakperiod
-        flag to indicate if the reporting should be done since the last sonarqube leak period (delta analysis). Default is false.
-
-    --allbugs
-        flag to indicate if the report should contain all bugs, not only vulnerabilities. Default is false
-
-    --fixMissingRule
-        Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true. Default is false
-
-    --noSecurityHotspot
-        Set this flag for old versions of sonarQube without security hotspots (<7.3). Default is false
-
-    --linkIssues
-        Set this flag to create links to Sonar from reported issues
-
-    --qualityGateStatus
-        Set this flag to include quality gate status in the report. Default is false
-
-    --noRulesInReport
-        Set this flag to omit "Known Security Rules" section from report. Default is false
-
-    --vulnerabilityPhrase
-        Set to override 'Vulnerability' phrase in the report. Default 'Vulnerability'
-
-    --vulnerabilityPluralPhrase
-        Set to override 'Vulnerabilities' phrase in the report. Default 'Vulnerabilities'
-
-    --saveReportJson
-        Save the report data in JSON format. Set to target file name. Default disabled
-
-    --sonarPropertiesFile
-        To use a sonar properties file. Default sonar-project.properties
-
-    --stylesheetFile
-        CSS stylesheet file path
-
-    --help
-        display this help message`);
-  process.exit();
-}
+const options = program.opts();
 
 function logError(context, error) {
   var errorCode =
@@ -133,10 +84,13 @@ function logError(context, error) {
     errorResponseStatusMessage,
     errorResponseBody
   );
+  if (options.exitCode) {
+    process.exit(1);
+  }
 }
 
 const issueLink =
-  argv.linkIssues == "true"
+  options.linkIssues
     ? (data, issue) => (c) =>
         `<a href="${data.sonarBaseURL}/project/issues?${
           data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
@@ -148,7 +102,7 @@ const issueLink =
     : (data, issue) => (c) => c;
 
 const hotspotLink =
-  argv.linkIssues == "true"
+  options.linkIssues
     ? (data, hotspot) => (c) =>
         `<a href="${data.sonarBaseURL}/security_hotspots?${
           data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
@@ -168,40 +122,40 @@ const hotspotLink =
   let properties = [];
   try {
     properties = propertiesToJson(
-      argv.sonarPropertiesFile || "sonar-project.properties"
+      options.sonarPropertiesFile
     );
   } catch (e) {}
 
-  const stylesheetFile = (argv.stylesheetFile || __dirname + "/style.css")
+  const stylesheetFile = (options.stylesheetFile || __dirname + "/style.css")
   const stylesheet = await fs.readFile(stylesheetFile, "binary");
   console.error('using stylesheet file: %s', stylesheetFile);
+  const builtInEjs = resolve(__dirname, options.ejsFile);
+  const ejsFile = existsSync(builtInEjs) ? builtInEjs : resolve(options.ejsFile);
 
   const data = {
     date: new Date().toDateString(),
-    projectName: argv.project || properties["sonar.projectName"],
-    applicationName: argv.application,
-    releaseName: argv.release,
-    pullRequest: argv.pullrequest,
-    branch: argv.branch,
-    sinceLeakPeriod: argv.sinceleakperiod == "true",
+    projectName: options.project || properties["sonar.projectName"],
+    applicationName: options.application,
+    releaseName: options.release,
+    pullRequest: options.pullrequest,
+    branch: options.branch,
+    sinceLeakPeriod: options.sinceLeakPeriod,
     previousPeriod: "",
-    allBugs: argv.allbugs == "true",
-    fixMissingRule: argv.fixMissingRule == "true",
-    noSecurityHotspot: argv.noSecurityHotspot == "true",
-    noRulesInReport: argv.noRulesInReport == "true",
+    allBugs: options.allbugs,
+    fixMissingRule: options.fixMissingRule,
+    noSecurityHotspot: options.noSecurityHotspot,
+    noRulesInReport: options.noRulesInReport,
     stylesheet: stylesheet,
-    vulnerabilityPhrase: argv.vulnerabilityPhrase || "Vulnerability",
-    vulnerabilityPluralPhrase:
-      argv.vulnerabilityPluralPhrase || "Vulnerabilities",
+    vulnerabilityPhrase: options.vulnerabilityPhrase,
+    vulnerabilityPluralPhrase: options.vulnerabilityPluralPhrase,
     // sonar URL without trailing /
-    sonarBaseURL: argv.sonarurl
-      ? argv.sonarurl.replace(/\/$/, "")
-      : properties["sonar.host.url"],
-    sonarComponent: argv.sonarcomponent || properties["sonar.projectKey"],
-    sonarOrganization: argv.sonarorganization,
+    sonarBaseURL: options.sonarurl ? options.sonarurl.replace(/\/$/, "") : properties["sonar.host.url"],
+    sonarComponent: options.sonarcomponent || properties["sonar.projectKey"],
+    sonarOrganization: options.sonarorganization,
     rules: new Map(),
     issues: [],
     hotspotKeys: [],
+    ejsFile,
   };
 
   const leakPeriodFilter = data.sinceLeakPeriod ? "&sinceLeakPeriod=true" : "";
@@ -249,17 +203,17 @@ const hotspotLink =
   let ISSUE_STATUSES = "";
   let HOTSPOT_STATUSES = "TO_REVIEW";
 
-  if (data.noSecurityHotspot || version < "7.3") {
+  if (data.noSecurityHotspot || semver.satisfies(version, "<7.3")) {
     // hotspots don't exist
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY";
     ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED";
-  } else if (version >= "7.3" && version < "7.8") {
+  } else if (semver.satisfies(version, ">=7.3 && <7.8")) {
     // hotspots are stored in the /issues endpoint but issue status doesn't include TO_REVIEW,IN_REVIEW yet
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED";
-  } else if (version >= "7.8" && version < "8.2") {
+  } else if (semver.satisfies(version, ">=7.8 && <8.2")) {
     // hotspots are stored in the /issues endpoint and issue status includes TO_REVIEW,IN_REVIEW
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
@@ -299,9 +253,9 @@ const hotspotLink =
     filterRule = "";
   }
 
-  const username = argv.sonarusername || properties["sonar.login"];
-  const password = argv.sonarpassword || properties["sonar.password"];
-  const token = argv.sonartoken;
+  const username = options.sonarusername || properties["sonar.login"];
+  const password = options.sonarpassword || properties["sonar.password"];
+  const token = options.sonartoken;
   if (username && password) {
     // Form authentication with username/password
     try {
@@ -339,10 +293,10 @@ const hotspotLink =
       }
     );
     const json = JSON.parse(response.body);
-    data.previousPeriod = json.settings[0].value;
+    data.previousPeriod = json.settings.length > 0 ? json.settings[0].value : '';
   }
 
-  if (argv.qualityGateStatus === "true") {
+  if (options.qualityGateStatus) {
     try {
       const response = await got(
         `${sonarBaseURL}/api/qualitygates/project_status?projectKey=${sonarComponent}${filterProjectStatus}`,
@@ -532,11 +486,21 @@ const hotspotLink =
     };
   }
 
-  if (argv.saveReportJson) {
-    await fs.writeFile(argv.saveReportJson, JSON.stringify(data));
+  if (options.saveReportJson) {
+    await fs.writeFile(options.saveReportJson, JSON.stringify(data, null, 2));
   }
 
-  ejs.renderFile(`${__dirname}/index.ejs`, data, {}, (err, str) => {
-    console.log(str);
+  ejs.renderFile(data.ejsFile, data, {}, (err, str) => {
+    if (err) return console.error(err);
+    fs.writeFile(options.output, str, function (err) {
+      if (err) return console.error(err);
+    });
+    ejs.renderFile( __dirname + "/summary.txt.ejs", data, {}, (err, str) => {
+      if (err) return console.error(err);
+      console.log(str)
+    });
+    if (options.exitCode && data.issues.length > 0) {
+      process.exit(1);
+    }
   });
 })();

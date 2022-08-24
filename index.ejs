@@ -42,7 +42,7 @@
 			<dt>Delta analysis</dt>
 			<dd><%= deltaAnalysis %></dd>
 
-			<%if (sinceLeakPeriod) { %>
+			<%if (previousPeriod) { %>
 
 			<dt>Reference period </dt>
 			<dd><%= previousPeriod %></dd>
@@ -147,7 +147,7 @@
 
 		<% } %>
 
-		<%if (!noRulesInReport) { %>
+		<%if (!rulesInReport) { %>
 		<h3>Known Security Rules</h3>
 		<table class="rulestable">
 			<thead>
