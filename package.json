@@ -10,11 +10,11 @@
     "test": "mocha -R mocha-lcov-reporter > coverage.lcov"
   },
   "dependencies": {
+    "commander": "^9.4.0",
     "ejs": "^3.1.8",
     "got": "^11.8.5",
     "hpagent": "^1.0.0",
-    "minimist": "^1.2.6",
-    "properties-file": "^2.1.2",
+    "properties-file": "^2.1.1",
     "proxy-from-env": "^1.1.0"
   },
   "devDependencies": {
@@ -23,5 +23,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": "^12.20.0 || >=14"
   }
 }
