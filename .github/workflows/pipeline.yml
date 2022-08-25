@@ -1,0 +1,24 @@
+name: Pipeline
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '17'
+          cache: 'npm'
+      - run: npm ci
+      - run: node --check .
+      - run: npm test
+      - run: node index.js
+          --sonarurl="https://sonarcloud.io"
+          --sonarcomponent="sopra-steria:soprasteria_sonar-report"
+          --sonarorganization="sopra-steria"
+          --project="Sonar Report"
+          --application="sonar-report"
+          --release="1.0.0"
+          --branch="${GITHUB_REF##*/}"
+          --output="samples/sonar-report_sonar-report.html"
+          --exit-code

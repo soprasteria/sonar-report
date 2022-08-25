@@ -491,12 +491,21 @@ const hotspotLink =
   }
 
   ejs.renderFile(data.ejsFile, data, {}, (err, str) => {
-    if (err) return console.error(err);
+    if (err) {
+      console.error(err);
+      if (options.exitCode) process.exit(1);
+    }
     fs.writeFile(options.output, str, function (err) {
-      if (err) return console.error(err);
+      if (err) {
+        console.error(err);
+        if (options.exitCode) process.exit(1);
+      }
     });
     ejs.renderFile( __dirname + "/summary.txt.ejs", data, {}, (err, str) => {
-      if (err) return console.error(err);
+      if (err) {
+        console.error(err);
+        if (options.exitCode) process.exit(1);
+      }
       console.log(str)
     });
     if (options.exitCode && data.issues.length > 0) {
