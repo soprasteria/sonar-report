@@ -2,8 +2,6 @@
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=soprasteria_sonar-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=soprasteria_sonar-report)
 [![Build Status](https://travis-ci.org/soprasteria/sonar-report.svg?branch=master)](https://github.com/soprasteria/sonar-report)
-[![Dependencies](https://david-dm.org/soprasteria/sonar-report/status.svg?path=client)](https://david-dm.org/soprasteria/sonar-report?path=client&view=list)
-[![Dev Dependencies](https://david-dm.org/soprasteria/sonar-report/dev-status.svg?path=client)](https://david-dm.org/soprasteria/sonar-report?path=client&type=dev&view=list)
 
 ![tomcat screenshot example](screenshots/tomcat1.png "tomcat screenshot example")
 
@@ -49,10 +47,10 @@ sonar-report \
   --output="samples/sonar-report_sonar-report.html"
 
 # Open in browser
-xdg-open /tmp/sonar-report_sonar-report.html
+xdg-open samples/sonar-report_sonar-report.html
 ```
 
-## Migrate to v2
+## Migrate to v3
 
 - Compared the flags, most of them switched from snake-case to keba-case
 - there is a new flag to ouput the report in a specific folder `--output`, it allows to generate a summary report that can be viewed in the CI:
@@ -174,4 +172,4 @@ This is a limitation in sonarQube API. There is no way around it to date apart f
 
 Try removing `--allbugs` or tune the query in index.js (see /web_api/api/issues under your sonarQube instance)
 
-See also this discussion https://community.sonarsource.com/t/cannot-get-more-than-10000-results-through-web-api/3662/4
+See also this discussion <https://community.sonarsource.com/t/cannot-get-more-than-10000-results-through-web-api/3662/4>
