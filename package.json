@@ -4,11 +4,13 @@
   "main": "index.js",
   "author": "SopraSteria",
   "bin": {
-    "sonar-report": "./index.js"
+    "sonar-report": "./cli.js"
   },
+  "exports": "./index.js",
   "scripts": {
     "test": "mocha -R mocha-lcov-reporter > coverage.lcov"
   },
+  "type": "module",
   "dependencies": {
     "commander": "^9.4.0",
     "ejs": "^3.1.8",
