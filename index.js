@@ -36,6 +36,7 @@ program
   .option('--sonar-properties-file <filename>', 'To use a sonar properties file.', 'sonar-project.properties')
   .option('--stylesheet-file <filename>', 'CSS stylesheet file path. (default: provided stylesheet)')
   .option('--ejs-file <filename>', 'EJS template file path. (default: built in template)', 'index.ejs')
+  .option('--no-ejs-file', 'Disable template file (print only the summary)')
   .option('--output <filename>', 'Output report file path. (default: report.html)', 'report.html')
   .option('--exit-code', 'Exit with non zero if issues were found')
   .addHelpText('after', `
@@ -126,12 +127,6 @@ const hotspotLink =
     );
   } catch (e) {}
 
-  const stylesheetFile = (options.stylesheetFile || __dirname + "/style.css")
-  const stylesheet = await fs.readFile(stylesheetFile, "binary");
-  console.error('using stylesheet file: %s', stylesheetFile);
-  const builtInEjs = resolve(__dirname, options.ejsFile);
-  const ejsFile = existsSync(builtInEjs) ? builtInEjs : resolve(options.ejsFile);
-
   const data = {
     date: new Date().toDateString(),
     projectName: options.project || properties["sonar.projectName"],
@@ -145,7 +140,6 @@ const hotspotLink =
     fixMissingRule: options.fixMissingRule,
     noSecurityHotspot: options.noSecurityHotspot,
     noRulesInReport: options.noRulesInReport,
-    stylesheet: stylesheet,
     vulnerabilityPhrase: options.vulnerabilityPhrase,
     vulnerabilityPluralPhrase: options.vulnerabilityPluralPhrase,
     // sonar URL without trailing /
@@ -155,7 +149,6 @@ const hotspotLink =
     rules: new Map(),
     issues: [],
     hotspotKeys: [],
-    ejsFile,
   };
 
   const leakPeriodFilter = data.sinceLeakPeriod ? "&sinceLeakPeriod=true" : "";
@@ -486,30 +479,24 @@ const hotspotLink =
     };
   }
 
+  console.error(await ejs.renderFile( __dirname + "/summary.txt.ejs", data, {}));
+
   if (options.saveReportJson) {
     await fs.writeFile(options.saveReportJson, JSON.stringify(data, null, 2));
   }
 
-  ejs.renderFile(data.ejsFile, data, {}, (err, str) => {
-    if (err) {
-      console.error(err);
-      if (options.exitCode) process.exit(1);
-    }
-    fs.writeFile(options.output, str, function (err) {
-      if (err) {
-        console.error(err);
-        if (options.exitCode) process.exit(1);
-      }
-    });
-    ejs.renderFile( __dirname + "/summary.txt.ejs", data, {}, (err, str) => {
-      if (err) {
-        console.error(err);
-        if (options.exitCode) process.exit(1);
-      }
-      console.log(str)
-    });
-    if (options.exitCode && data.issues.length > 0) {
-      process.exit(1);
-    }
-  });
+  if (options.ejsFile) {
+    const stylesheetFile = (options.stylesheetFile || __dirname + "/style.css")
+    const stylesheet = await fs.readFile(stylesheetFile, "binary");
+    console.error('using stylesheet file: %s', stylesheetFile);
+
+    const builtInEjs = resolve(__dirname, options.ejsFile);
+    const ejsFile = existsSync(builtInEjs) ? builtInEjs : resolve(options.ejsFile);
+
+    const renderedFile = await ejs.renderFile(ejsFile, { ...data, stylesheet }, {});
+    await fs.writeFile(options.output, renderedFile);
+  }
+  if (options.exitCode && data.issues.length > 0) {
+    process.exit(1);
+  }
 })();
