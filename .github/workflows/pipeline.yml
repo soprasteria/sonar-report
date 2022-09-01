@@ -10,9 +10,10 @@ jobs:
           node-version: '17'
           cache: 'npm'
       - run: npm ci
+      - run: npm link
       - run: node --check .
       - run: npm test
-      - run: node index.js
+      - run: sonar-report
           --sonarurl="https://sonarcloud.io"
           --sonarcomponent="sopra-steria:soprasteria_sonar-report"
           --sonarorganization="sopra-steria"
