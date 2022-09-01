@@ -1,17 +1,20 @@
-#!/usr/bin/env node
-const { program, Option } = require('commander');
-const { promises: fs, existsSync } = require("fs");
-const { resolve } = require('path');
-const ejs = require("ejs");
-const getProxyForUrl = require("proxy-from-env").getProxyForUrl;
-const got = require("got");
-const hpagent = require("hpagent");
-const propertiesToJson = require("properties-file").propertiesToJson;
-const semver = require('semver');
+import { existsSync } from "fs";
+import fs from "fs/promises";
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Command } from 'commander';
+import ejs from "ejs";
+import { getProxyForUrl } from "proxy-from-env";
+import got from "got";
+import hpagent from "hpagent";
+import { propertiesToJson } from "properties-file";
+import semver from 'semver';
 
-program
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const buildCommand = (command = new Command()) => command
   .description('Generate a vulnerability report from a SonarQube instance.')
-  .addOption(new Option('--http-proxy', 'the proxy to use to reach the sonarqube instance (http://<host>:<port>)').env('http_proxy'))
+  .addOption(command.createOption('--http-proxy', 'the proxy to use to reach the sonarqube instance (http://<host>:<port>)').env('http_proxy'))
   .option('--project <project>', 'name of the project, displayed in the header of the generated report')
   .option('--application <application>', 'name of the application, displayed in the header of the generated report')
   .option('--release <release>', 'name of the release, displayed in the header of the generated report')
@@ -36,88 +39,67 @@ program
   .option('--sonar-properties-file <filename>', 'To use a sonar properties file.', 'sonar-project.properties')
   .option('--stylesheet-file <filename>', 'CSS stylesheet file path. (default: provided stylesheet)')
   .option('--ejs-file <filename>', 'EJS template file path. (default: built in template)', 'index.ejs')
+  .option('--no-ejs-file', 'Disable template file (print only the summary)')
   .option('--output <filename>', 'Output report file path. (default: report.html)', 'report.html')
   .option('--exit-code', 'Exit with non zero if issues were found')
   .addHelpText('after', `
 Example
   sonar-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --since-leak-period=true > /tmp/sonar-report`);
 
-program.parse();
+const generateReport = async options => {
+  const { onError = () => process.exit(1) } = options;
+  function logError(context, error) {
+    const {
+      code = '',
+      message = '',
+      response = {},
+    } = error;
+    const {
+      statusCode = '',
+      statusMessage = '',
+      body = '',
+    } = response;
 
-const options = program.opts();
-
-function logError(context, error) {
-  var errorCode =
-    typeof error.code === "undefined" || error.code === null ? "" : error.code;
-  var errorMessage =
-    typeof error.message === "undefined" || error.message === null
-      ? ""
-      : error.message;
-  var errorResponseStatusCode =
-    typeof error.response === "undefined" ||
-    error.response === null ||
-    error.response.statusCode === "undefined" ||
-    error.response.statusCode === null
-      ? ""
-      : error.response.statusCode;
-  var errorResponseStatusMessage =
-    typeof error.response === "undefined" ||
-    error.response === null ||
-    error.response.statusMessage === "undefined" ||
-    error.response.statusMessage === null
-      ? ""
-      : error.response.statusMessage;
-  var errorResponseBody =
-    typeof error.response === "undefined" ||
-    error.response === null ||
-    error.response.body === "undefined" ||
-    error.response.body === null
-      ? ""
-      : error.response.body;
-
-  console.error(
-    "Error while %s : %s - %s - %s - %s - %s",
-    context,
-    errorCode,
-    errorMessage,
-    errorResponseStatusCode,
-    errorResponseStatusMessage,
-    errorResponseBody
-  );
-  if (options.exitCode) {
-    process.exit(1);
+    console.error(
+      "Error while %s : %s - %s - %s - %s - %s",
+      context,
+      code,
+      message,
+      statusCode,
+      statusMessage,
+      body
+    );
+    throw error;
   }
-}
 
-const issueLink =
-  options.linkIssues
-    ? (data, issue) => (c) =>
-        `<a href="${data.sonarBaseURL}/project/issues?${
-          data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
-        }id=${encodeURIComponent(
-          data.sonarComponent
-        )}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(
-          issue.key
-        )}">${c}</a>`
-    : (data, issue) => (c) => c;
+  const issueLink =
+    options.linkIssues
+      ? (data, issue) => (c) =>
+          `<a href="${data.sonarBaseURL}/project/issues?${
+            data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+          }id=${encodeURIComponent(
+            data.sonarComponent
+          )}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(
+            issue.key
+          )}">${c}</a>`
+      : (data, issue) => (c) => c;
+  
+  const hotspotLink =
+    options.linkIssues
+      ? (data, hotspot) => (c) =>
+          `<a href="${data.sonarBaseURL}/security_hotspots?${
+            data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+          }id=${encodeURIComponent(
+            data.sonarComponent
+          )}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>`
+      : (data, hotspot) => (c) => c;
 
-const hotspotLink =
-  options.linkIssues
-    ? (data, hotspot) => (c) =>
-        `<a href="${data.sonarBaseURL}/security_hotspots?${
-          data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
-        }id=${encodeURIComponent(
-          data.sonarComponent
-        )}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>`
-    : (data, hotspot) => (c) => c;
-
-(async () => {
-  var severity = new Map();
+  let severity = new Map();
   severity.set("MINOR", 0);
   severity.set("MAJOR", 1);
   severity.set("CRITICAL", 2);
   severity.set("BLOCKER", 3);
-  var hotspotSeverities = { HIGH: "CRITICAL", MEDIUM: "MAJOR", LOW: "MINOR" };
+  let hotspotSeverities = { HIGH: "CRITICAL", MEDIUM: "MAJOR", LOW: "MINOR" };
 
   let properties = [];
   try {
@@ -125,12 +107,6 @@ const hotspotLink =
       options.sonarPropertiesFile
     );
   } catch (e) {}
-
-  const stylesheetFile = (options.stylesheetFile || __dirname + "/style.css")
-  const stylesheet = await fs.readFile(stylesheetFile, "binary");
-  console.error('using stylesheet file: %s', stylesheetFile);
-  const builtInEjs = resolve(__dirname, options.ejsFile);
-  const ejsFile = existsSync(builtInEjs) ? builtInEjs : resolve(options.ejsFile);
 
   const data = {
     date: new Date().toDateString(),
@@ -143,9 +119,8 @@ const hotspotLink =
     previousPeriod: "",
     allBugs: options.allbugs,
     fixMissingRule: options.fixMissingRule,
-    noSecurityHotspot: options.noSecurityHotspot,
-    noRulesInReport: options.noRulesInReport,
-    stylesheet: stylesheet,
+    noSecurityHotspot: !options.securityHotspot,
+    noRulesInReport: !options.rulesInReport,
     vulnerabilityPhrase: options.vulnerabilityPhrase,
     vulnerabilityPluralPhrase: options.vulnerabilityPluralPhrase,
     // sonar URL without trailing /
@@ -155,7 +130,6 @@ const hotspotLink =
     rules: new Map(),
     issues: [],
     hotspotKeys: [],
-    ejsFile,
   };
 
   const leakPeriodFilter = data.sinceLeakPeriod ? "&sinceLeakPeriod=true" : "";
@@ -165,8 +139,8 @@ const hotspotLink =
   const withOrganization = data.sonarOrganization
     ? `&organization=${data.sonarOrganization}`
     : "";
-  var headers = {};
-  var version = null;
+  let headers = {};
+  let version = null;
 
   // the got agent if a forward proxy is required, or remains null
   let agent = null;
@@ -486,30 +460,29 @@ const hotspotLink =
     };
   }
 
+  console.error(await ejs.renderFile( __dirname + "/summary.txt.ejs", data, {}));
+
   if (options.saveReportJson) {
     await fs.writeFile(options.saveReportJson, JSON.stringify(data, null, 2));
   }
 
-  ejs.renderFile(data.ejsFile, data, {}, (err, str) => {
-    if (err) {
-      console.error(err);
-      if (options.exitCode) process.exit(1);
-    }
-    fs.writeFile(options.output, str, function (err) {
-      if (err) {
-        console.error(err);
-        if (options.exitCode) process.exit(1);
-      }
-    });
-    ejs.renderFile( __dirname + "/summary.txt.ejs", data, {}, (err, str) => {
-      if (err) {
-        console.error(err);
-        if (options.exitCode) process.exit(1);
-      }
-      console.log(str)
-    });
-    if (options.exitCode && data.issues.length > 0) {
-      process.exit(1);
-    }
-  });
-})();
+  if (options.ejsFile) {
+    const stylesheetFile = (options.stylesheetFile || __dirname + "/style.css")
+    const stylesheet = await fs.readFile(stylesheetFile, "binary");
+    console.error('using stylesheet file: %s', stylesheetFile);
+
+    const builtInEjs = resolve(__dirname, options.ejsFile);
+    const ejsFile = existsSync(builtInEjs) ? builtInEjs : resolve(options.ejsFile);
+
+    const renderedFile = await ejs.renderFile(ejsFile, { ...data, stylesheet }, {});
+    await fs.writeFile(options.output, renderedFile);
+  }
+  if (options.exitCode && data.issues.length > 0) {
+    const error = new Error(`Issues were found`);
+    error.data = data;
+    onError(error);
+  }
+  return data;
+};
+
+export { buildCommand, generateReport };
