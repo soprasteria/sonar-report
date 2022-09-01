@@ -120,8 +120,8 @@ const generateReport = async options => {
     previousPeriod: "",
     allBugs: options.allbugs,
     fixMissingRule: options.fixMissingRule,
-    noSecurityHotspot: options.noSecurityHotspot,
-    noRulesInReport: options.noRulesInReport,
+    noSecurityHotspot: !options.securityHotspot,
+    noRulesInReport: !options.rulesInReport,
     vulnerabilityPhrase: options.vulnerabilityPhrase,
     vulnerabilityPluralPhrase: options.vulnerabilityPluralPhrase,
     // sonar URL without trailing /
