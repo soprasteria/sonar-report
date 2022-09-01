@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { existsSync } from "fs";
 import fs from "fs/promises";
 import { resolve, dirname } from 'path';
