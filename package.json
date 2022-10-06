@@ -12,7 +12,7 @@
   },
   "type": "module",
   "dependencies": {
-    "commander": "^9.4.0",
+    "commander": "^9.4.1",
     "ejs": "^3.1.8",
     "got": "^11.8.5",
     "hpagent": "^1.0.0",
