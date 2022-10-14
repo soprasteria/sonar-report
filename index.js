@@ -29,10 +29,10 @@ const buildCommand = (command = new Command()) => command
   .option('--since-leak-period', 'flag to indicate if the reporting should be done since the last sonarqube leak period (delta analysis).', false)
   .option('--allbugs', 'flag to indicate if the report should contain all bugs, not only vulnerabilities.', false)
   .option('--fix-missing-rule', 'Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true.', false)
-  .option('--no-security-hotspot', 'Set this flag for old versions of sonarQube without security hotspots (<7.3).', false)
+  .option('--no-security-hotspot', 'Set this flag for old versions of sonarQube without security hotspots (<7.3).', true)
   .option('--link-issues', 'Set this flag to create links to Sonar from reported issues', false)
   .option('--quality-gate-status', 'Set this flag to include quality gate status in the report.', false)
-  .option('--no-rules-in-report', 'Set this flag to omit "Known Security Rules" section from report.', false)
+  .option('--no-rules-in-report', 'Set this flag to omit "Known Security Rules" section from report.', true)
   .option('--vulnerability-phrase <phrase>', "Set to override 'Vulnerability' phrase in the report.", 'Vulnerability')
   .option('--vulnerability-plural-phrase <phrase>', "Set to override 'Vulnerabilities' phrase in the report. ", 'Vulnerabilities')
   .option('--save-report-json <filename>', 'Save the report data in JSON format. Set to target file name', '')
@@ -83,7 +83,7 @@ const generateReport = async options => {
             issue.key
           )}">${c}</a>`
       : (data, issue) => (c) => c;
-  
+
   const hotspotLink =
     options.linkIssues
       ? (data, hotspot) => (c) =>
