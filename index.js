@@ -182,12 +182,12 @@ const generateReport = async options => {
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY";
     ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED";
-  } else if (semver.satisfies(version, ">=7.3 && <7.8")) {
+  } else if (semver.satisfies(version, "7.3 - 7.8")) {
     // hotspots are stored in the /issues endpoint but issue status doesn't include TO_REVIEW,IN_REVIEW yet
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED";
-  } else if (semver.satisfies(version, ">=7.8 && <8.2")) {
+  } else if (semver.satisfies(version, "7.8 - 8.2")) {
     // hotspots are stored in the /issues endpoint and issue status includes TO_REVIEW,IN_REVIEW
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
@@ -386,7 +386,8 @@ const generateReport = async options => {
     } while (nbResults === pageSize && page <= maxPage);
 
     let hSeverity = "";
-    if (version >= "8.2" && !data.noSecurityHotspot) {
+
+    if (!data.noSecurityHotspot && semver.satisfies(version, ">=8.2")) {
       // 1) Listing hotspots with hotspots/search
       page = 1;
       do {
