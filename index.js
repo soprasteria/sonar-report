@@ -165,7 +165,7 @@ const generateReport = async options => {
       headers,
     });
     const json = JSON.parse(res.body);
-    version = json.version;
+    version = semver.coerce(json.version);
     console.error("sonarqube version: %s", version);
   } catch (error) {
     logError("getting version", error);
@@ -187,13 +187,13 @@ const generateReport = async options => {
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED";
-  } else if (semver.satisfies(version, "7.8 - 8.2")) {
+  } else if (semver.satisfies(version, "7.8 - 7.9")) {
     // hotspots are stored in the /issues endpoint and issue status includes TO_REVIEW,IN_REVIEW
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
     ISSUE_STATUSES = "OPEN,CONFIRMED,REOPENED,TO_REVIEW";
   } else {
-    // version >= 8.2
+    // version >= 8.0
     // hotspots are in a dedicated endpoint: rules have type SECURITY_HOTSPOT but issues don't
     DEFAULT_ISSUES_FILTER = "&types=VULNERABILITY";
     DEFAULT_RULES_FILTER = "&types=VULNERABILITY,SECURITY_HOTSPOT";
