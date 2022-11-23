@@ -54,7 +54,7 @@
 		</dl>
 
         <%if (qualityGateStatus) { %>
-        <h2>Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period.date %> (<%= qualityGateStatus.projectStatus.period.parameter %>)</h2>
+        <h2>Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period?.date %> (<%= qualityGateStatus.projectStatus.period?.parameter %>)</h2>
 
           <table>
             <thead>
