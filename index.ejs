@@ -129,6 +129,7 @@
 					<th>Description</th>
 					<th>Message</th>
 					<th class="hidden">Key</th>
+                    <th>Type</th>
 					<th>Status</th>
 				</tr>
 			</thead>
@@ -142,7 +143,8 @@
 					<td><%= issues[i].description %></td>
 					<td><%= issues[i].message %></td>
 					<td class="hidden"><%= issues[i].key %></td>
-					<td><%- issues[i].link(issues[i].status) %></td>
+                    <td><%= issues[i].type %></td>
+                    <td><%= issues[i].link(issues[i].status) %></td>
 				</tr>
 				<% } %>
 			</tbody>
