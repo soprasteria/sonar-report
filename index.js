@@ -87,7 +87,7 @@ const generateReport = async options => {
   const hotspotLink =
     options.linkIssues
       ? (data, hotspot) => (c) =>
-          `<a href="${data.sonarBaseURL}/security_hotspots?${
+          `<a href="${data.sonarBaseURL}/project/security_hotspots?${
             data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
           }id=${encodeURIComponent(
             data.sonarComponent
