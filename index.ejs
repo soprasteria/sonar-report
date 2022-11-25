@@ -136,7 +136,7 @@
 			<tbody>
 				<% for(var i = 0; i < issues.length; i++) { %>
 				<tr>
-					<td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
+					<td><a href="<%= sonarBaseURL %>/organizations/<%= sonarOrganization %>/rules?open=<%= issues[i].rule %>&rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
 					<td><%= issues[i].severity %></td>
 					<td class="component"><%= issues[i].component %></td>
 					<td><%= issues[i].line %></td>
