@@ -144,7 +144,7 @@
 					<td><%= issues[i].message %></td>
 					<td class="hidden"><%= issues[i].key %></td>
                     <td><%= issues[i].type %></td>
-                    <td><%= issues[i].link(issues[i].status) %></td>
+                    <td><%- issues[i].link(issues[i].status) %></td>
 				</tr>
 				<% } %>
 			</tbody>
