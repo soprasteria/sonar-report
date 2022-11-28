@@ -15,7 +15,7 @@ jobs:
       - run: npm test
       - run: sonar-report
           --sonarurl="https://sonarcloud.io"
-          --sonarcomponent="sopra-steria:soprasteria_sonar-report"
+          --sonarcomponent="soprasteria_sonar-report"
           --sonarorganization="sopra-steria"
           --project="Sonar Report"
           --application="sonar-report"
