@@ -387,7 +387,7 @@ const generateReport = async options => {
 
     let hSeverity = "";
 
-    if (!data.noSecurityHotspot && semver.satisfies(version, ">=8.2")) {
+    if (!data.noSecurityHotspot && semver.satisfies(version, ">=8.0")) {
       // 1) Listing hotspots with hotspots/search
       page = 1;
       do {

@@ -11,7 +11,7 @@ Delta analysis: <%= deltaAnalysis %>
 Reference period: <%= previousPeriod %>
 <%_ } _%>
 <%_ if (qualityGateStatus) { _%>
-Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period.date %> (<%= qualityGateStatus.projectStatus.period.parameter %>)<
+Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period?.date %> (<%= qualityGateStatus.projectStatus.period?.parameter %>)<
 
   <%_ for (const condition of qualityGateStatus.projectStatus.conditions) { _%>
 Metric: <%= condition.metricKey %></td>

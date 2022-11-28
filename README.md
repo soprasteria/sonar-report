@@ -153,7 +153,7 @@ Get the dependencies:
 npm install
 ```
 
-Run with the same command as [Use](#use) but use `node index.js` instead of `sonar-report`
+Run with the same command as [Use](#use) but use `node cli.js` instead of `sonar-report`
 
 ## Troubleshooting
 
