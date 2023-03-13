@@ -13,7 +13,7 @@
   "type": "module",
   "dependencies": {
     "commander": "^9.5.0",
-    "ejs": "^3.1.8",
+    "ejs": "^3.1.9",
     "got": "^11.8.5",
     "hpagent": "^1.2.0",
     "properties-file": "^2.1.28",
