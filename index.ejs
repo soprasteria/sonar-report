@@ -45,6 +45,13 @@
 			<dt>Delta analysis</dt>
 			<dd><%= deltaAnalysis %></dd>
 
+			<%if (coverage) { %>
+
+			<dt>Coverage</dt>
+			<dd><%= coverage %></dd>
+
+			<% } %>
+
 			<%if (previousPeriod) { %>
 
 			<dt>Reference period </dt>

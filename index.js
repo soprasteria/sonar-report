@@ -30,6 +30,7 @@ const buildCommand = (command = new Command()) => command
   .option('--allbugs', 'flag to indicate if the report should contain all bugs, not only vulnerabilities.', false)
   .option('--fix-missing-rule', 'Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true.', false)
   .option('--no-security-hotspot', 'Set this flag for old versions of sonarQube without security hotspots (<7.3).', true)
+  .option('--coverage', 'Set this flag to include code coverage status in the report.', false)
   .option('--link-issues', 'Set this flag to create links to Sonar from reported issues', false)
   .option('--quality-gate-status', 'Set this flag to include quality gate status in the report.', false)
   .option('--no-rules-in-report', 'Set this flag to omit "Known Security Rules" section from report.', true)
@@ -205,6 +206,7 @@ const generateReport = async options => {
   let filterIssue = DEFAULT_ISSUES_FILTER;
   let filterHotspots = "";
   let filterProjectStatus = "";
+  let filterCoverage = ""
 
   if (data.allBugs) {
     filterRule = "";
@@ -215,12 +217,14 @@ const generateReport = async options => {
     filterIssue = filterIssue + "&pullRequest=" + data.pullRequest;
     filterHotspots = filterHotspots + "&pullRequest=" + data.pullRequest;
     filterProjectStatus = "&pullRequest=" + data.pullRequest;
+    filterCoverage = "&pullRequest=" + data.pullRequest
   }
 
   if (data.branch) {
     filterIssue = filterIssue + "&branch=" + data.branch;
     filterHotspots = filterHotspots + "&branch=" + data.branch;
     filterProjectStatus = "&branch=" + data.branch;
+    filterCoverage = "&branch=" + data.branch
   }
 
   if (data.fixMissingRule) {
@@ -268,6 +272,18 @@ const generateReport = async options => {
     );
     const json = JSON.parse(response.body);
     data.previousPeriod = json.settings.length > 0 ? json.settings[0].value : '';
+  }
+
+  if (options.coverage) {
+    const response = await got(
+      `${sonarBaseURL}/api/measures/component?component=${sonarComponent}&metricKeys=coverage${filterCoverage}`,
+      {
+        agent,
+        headers,
+      }
+    );
+    const json = JSON.parse(response.body);
+    data.coverage = json.component.measures[0].value || 0;
   }
 
   if (options.qualityGateStatus) {
