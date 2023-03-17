@@ -123,6 +123,7 @@ const generateReport = async options => {
     noSecurityHotspot: !options.securityHotspot,
     noRulesInReport: !options.rulesInReport,
     vulnerabilityPhrase: options.vulnerabilityPhrase,
+    noCoverage: !options.coverage,
     vulnerabilityPluralPhrase: options.vulnerabilityPluralPhrase,
     // sonar URL without trailing /
     sonarBaseURL: options.sonarurl ? options.sonarurl.replace(/\/$/, "") : properties["sonar.host.url"],
@@ -274,7 +275,7 @@ const generateReport = async options => {
     data.previousPeriod = json.settings.length > 0 ? json.settings[0].value : '';
   }
 
-  if (options.coverage) {
+  if (!data.noCoverage) {
     const response = await got(
       `${sonarBaseURL}/api/measures/component?component=${sonarComponent}&metricKeys=coverage${filterCoverage}`,
       {
@@ -283,7 +284,7 @@ const generateReport = async options => {
       }
     );
     const json = JSON.parse(response.body);
-    data.coverage = json.component.measures[0].value || 0;
+    data.coverage = json.component.measures[0]?.value || 0;
   }
 
   if (options.qualityGateStatus) {
@@ -420,6 +421,7 @@ const generateReport = async options => {
           nbResults = json.hotspots.length;
           data.hotspotKeys.push(...json.hotspots.map((hotspot) => hotspot.key));
         } catch (error) {
+          console.error(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${leakPeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}` )
           logError("getting hotspots list", error);
           return null;
         }

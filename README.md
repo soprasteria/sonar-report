@@ -38,12 +38,12 @@ Generate a vulnerability report from a SonarQube instance.
 # Generate report example
 sonar-report \
   --sonarurl="https://sonarcloud.io" \
-  --sonarcomponent="sopra-steria:soprasteria_sonar-report" \
+  --sonarcomponent="soprasteria_sonar-report" \
   --sonarorganization="sopra-steria" \
   --project="Sonar Report" \
   --application="sonar-report" \
   --release="1.0.0" \
-  --branch="feature/branch" \
+  --branch="master" \
   --output="samples/sonar-report_sonar-report.html"
 
 # Open in browser
