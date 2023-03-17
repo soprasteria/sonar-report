@@ -9,7 +9,7 @@
 
 ## Install
 
-Compatible with node 10+ (tested with node 10 -> 14)
+Compatible with node 10+ (tested with node 10 -> 18)
 
 ```bash
 $ npm install -g sonar-report
