@@ -88,7 +88,7 @@ const generateReport = async options => {
   const hotspotLink =
     options.linkIssues
       ? (data, hotspot) => (c) =>
-          `<a href="${data.sonarBaseURL}/security_hotspots?${
+          `<a href="${data.sonarBaseURL}/project/security_hotspots?${
             data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
           }id=${encodeURIComponent(
             data.sonarComponent
@@ -393,6 +393,7 @@ const generateReport = async options => {
               description: message,
               message: issue.message,
               key: issue.key,
+              type: issue.type
             };
           })
         );
@@ -457,6 +458,7 @@ const generateReport = async options => {
             description: hotspot.rule ? hotspot.rule.name : "/",
             message: hotspot.message,
             key: hotspot.key,
+            type: "SECURITY_HOTSPOT"
           });
         } catch (error) {
           logError("getting hotspots details", error);
