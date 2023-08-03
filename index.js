@@ -271,7 +271,7 @@ const generateReport = async options => {
       }
     );
     const json = JSON.parse(response.body);
-    data.previousPeriod = json.newCodePeriods[0].type + " > " + json.newCodePeriods[0].value
+    data.inNewCodePeriod = json.newCodePeriods[0].type + " > " + json.newCodePeriods[0].value;
   }
 
   if (!data.noCoverage) {
