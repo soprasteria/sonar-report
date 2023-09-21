@@ -9,6 +9,8 @@ import got from "got";
 import hpagent from "hpagent";
 import { propertiesToJson } from "properties-file";
 import semver from 'semver';
+import { log } from "console";
+import { type } from "os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -26,7 +28,7 @@ const buildCommand = (command = new Command()) => command
   .option('--sonarpassword <password>', 'auth password')
   .option('--sonartoken <token>', 'auth token')
   .option('--sonarorganization <organization>', 'name of the sonarcloud.io organization')
-  .option('--since-leak-period', 'flag to indicate if the reporting should be done since the last sonarqube leak period (delta analysis).', false)
+  .option('--in-new-code-period', 'flag to indicate if the reporting should be done using the new code definition (delta analysis).', false)
   .option('--allbugs', 'flag to indicate if the report should contain all bugs, not only vulnerabilities.', false)
   .option('--fix-missing-rule', 'Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true.', false)
   .option('--no-security-hotspot', 'Set this flag for old versions of sonarQube without security hotspots (<7.3).', true)
@@ -45,7 +47,7 @@ const buildCommand = (command = new Command()) => command
   .option('--exit-code', 'Exit with non zero if issues were found')
   .addHelpText('after', `
 Example
-  sonar-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --since-leak-period=true > /tmp/sonar-report`);
+  sonar-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --in-new-code-period > /tmp/sonar-report`);
 
 const generateReport = async options => {
   const { onError = () => process.exit(1) } = options;
@@ -76,23 +78,21 @@ const generateReport = async options => {
   const issueLink =
     options.linkIssues
       ? (data, issue) => (c) =>
-          `<a href="${data.sonarBaseURL}/project/issues?${
-            data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
-          }id=${encodeURIComponent(
-            data.sonarComponent
-          )}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(
-            issue.key
-          )}">${c}</a>`
+        `<a href="${data.sonarBaseURL}/project/issues?${data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+        }id=${encodeURIComponent(
+          data.sonarComponent
+        )}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(
+          issue.key
+        )}">${c}</a>`
       : (data, issue) => (c) => c;
 
   const hotspotLink =
     options.linkIssues
       ? (data, hotspot) => (c) =>
-          `<a href="${data.sonarBaseURL}/security_hotspots?${
-            data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
-          }id=${encodeURIComponent(
-            data.sonarComponent
-          )}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>`
+        `<a href="${data.sonarBaseURL}/security_hotspots?${data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+        }id=${encodeURIComponent(
+          data.sonarComponent
+        )}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>`
       : (data, hotspot) => (c) => c;
 
   let severity = new Map();
@@ -107,17 +107,16 @@ const generateReport = async options => {
     properties = propertiesToJson(
       options.sonarPropertiesFile
     );
-  } catch (e) {}
+  } catch (e) { }
 
   const data = {
-    date: new Date().toDateString(),
+    date: new Date().toLocaleDateString('en-us', { weekday: "long", year: "numeric", month: "short", day: "numeric" }),
     projectName: options.project || properties["sonar.projectName"],
     applicationName: options.application,
     releaseName: options.release,
     pullRequest: options.pullrequest,
     branch: options.branch,
-    sinceLeakPeriod: options.sinceLeakPeriod,
-    previousPeriod: "",
+    inNewCodePeriod: options.inNewCodePeriod,
     allBugs: options.allbugs,
     fixMissingRule: options.fixMissingRule,
     noSecurityHotspot: !options.securityHotspot,
@@ -134,8 +133,8 @@ const generateReport = async options => {
     hotspotKeys: [],
   };
 
-  const leakPeriodFilter = data.sinceLeakPeriod ? "&sinceLeakPeriod=true" : "";
-  data.deltaAnalysis = data.sinceLeakPeriod ? "Yes" : "No";
+  const newCodePeriodFilter = data.inNewCodePeriod ? "&inNewCodePeriod=true" : "";
+  data.deltaAnalysis = data.inNewCodePeriod ? "Yes" : "No";
   const sonarBaseURL = data.sonarBaseURL;
   const sonarComponent = data.sonarComponent;
   const withOrganization = data.sonarOrganization
@@ -263,16 +262,16 @@ const generateReport = async options => {
       "Basic " + Buffer.from(token + ":").toString("base64");
   }
 
-  if (data.sinceLeakPeriod) {
+  if (data.inNewCodePeriod) {
     const response = await got(
-      `${sonarBaseURL}/api/settings/values?component=${sonarComponent}&keys=sonar.leak.period`,
+      `${sonarBaseURL}/api/new_code_periods/list?project=${sonarComponent}`,
       {
         agent,
         headers,
       }
     );
     const json = JSON.parse(response.body);
-    data.previousPeriod = json.settings.length > 0 ? json.settings[0].value : '';
+    data.inNewCodePeriod = json.newCodePeriods[0].type + " > " + json.newCodePeriods[0].value;
   }
 
   if (!data.noCoverage) {
@@ -296,10 +295,30 @@ const generateReport = async options => {
           headers,
         }
       );
+
+      // set values to match alpha characters in sonar
+      const conditionValue = new Map();
+      conditionValue.set("1", "A");
+      conditionValue.set("2", "B");
+      conditionValue.set("3", "C");
+      conditionValue.set("4", "D");
+
       const json = JSON.parse(response.body);
+
+      // get date for quality gate status, day month year format
+      data.qualityGateStatusPeriodDate = new Date(json.projectStatus.period.date).toISOString().substring(0, 10)
+
       if (json.projectStatus.conditions) {
         for (const condition of json.projectStatus.conditions) {
           condition.metricKey = condition.metricKey.replace(/_/g, " ");
+          if (condition.metricKey != "new duplicated lines density") {
+            condition.actualValue = conditionValue.get(condition.actualValue)
+            condition.errorThreshold = conditionValue.get(condition.errorThreshold)
+          } else {
+            condition.actualValue = condition.actualValue + "%"
+            condition.errorThreshold = condition.errorThreshold + "%"
+          }
+
         }
       }
       data.qualityGateStatus = json;
@@ -364,7 +383,7 @@ const generateReport = async options => {
     do {
       try {
         const response = await got(
-          `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${leakPeriodFilter}${filterIssue}${withOrganization}`,
+          `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${newCodePeriodFilter}${filterIssue}${withOrganization}`,
           {
             agent,
             headers,
@@ -410,7 +429,7 @@ const generateReport = async options => {
       do {
         try {
           const response = await got(
-            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${leakPeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`,
+            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`,
             {
               agent,
               headers,
@@ -421,7 +440,7 @@ const generateReport = async options => {
           nbResults = json.hotspots.length;
           data.hotspotKeys.push(...json.hotspots.map((hotspot) => hotspot.key));
         } catch (error) {
-          console.error(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${leakPeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}` )
+          console.error(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`)
           logError("getting hotspots list", error);
           return null;
         }
@@ -479,7 +498,7 @@ const generateReport = async options => {
     };
   }
 
-  console.error(await ejs.renderFile( __dirname + "/summary.txt.ejs", data, {}));
+  console.error(await ejs.renderFile(__dirname + "/summary.txt.ejs", data, {}));
 
   if (options.saveReportJson) {
     await fs.writeFile(options.saveReportJson, JSON.stringify(data, null, 2));

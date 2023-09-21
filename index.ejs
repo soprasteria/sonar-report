@@ -2,21 +2,21 @@
 <html lang="en">
 
 <head>
-	<meta charset="UTF-8">
-	<title>SonarQube <%= vulnerabilityPhrase %> Report</title>
-	<style>
-	/*
+  <meta charset="UTF-8">
+  <title>SonarQube <%= vulnerabilityPhrase %> Report</title>
+  <style>
+    /*
 	The sss stylesheet is released under the MIT license.
 	<https://github.com/Thiht/sss>
 	*/
-	<%- stylesheet %>
-	</style>
+    <%- stylesheet %>
+  </style>
 </head>
 
 <body>
-	<div class="summup">
-		<!-- insert your company banner here -->
-		<!--
+  <div class="summup">
+    <!-- insert your company banner here -->
+    <!--
 		<p class="banner">
 			<a href="https://www.soprasteria.com/" target="_blank">
 				<img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/02/Sopra_Steria_logo.svg/1280px-Sopra_Steria_logo.svg.png" alt="Sopra Steria" height="50">
@@ -24,196 +24,243 @@
 		</p>
 		-->
 
-		<h1>SonarQube <%= vulnerabilityPhrase %> Report</h1>
+    <h1>SonarQube <%= vulnerabilityPhrase %> Report</h1>
 
-		<dl>
-			<dt>Report Generated On</dt>
-			<dd><%= date %></dd>
+    <dl>
+      <dt>Report Generated On</dt>
+      <dd>
+        <%= date %>
+      </dd>
 
-			<dt>Project Name</dt>
-			<dd><%= projectName %></dd>
+      <dt>Project Name/URL</dt>
+      <dd>
+        <a href="<%= sonarBaseURL %>/dashboard?id=<%= sonarComponent %>" target="_blank"><%= projectName %></a>
+      </dd>
 
-			<dt>Application</dt>
-			<dd><%= applicationName %></dd>
+      <dt>Application</dt>
+      <dd>
+        <%= applicationName %>
+      </dd>
 
-			<dt>Release</dt>
-			<dd><%= releaseName %></dd>
+      <dt>Release</dt>
+      <dd>
+        <%= releaseName %>
+      </dd>
 
-			<dt>Branch</dt>
-			<dd><%= branch %></dd>
+      <dt>Branch</dt>
+      <dd>
+        <%= branch %>
+      </dd>
 
-			<dt>Delta analysis</dt>
-			<dd><%= deltaAnalysis %></dd>
+      <dt>Delta Analysis</dt>
+      <dd>
+        <%= deltaAnalysis %>
+      </dd>
 
-			<%if (!noCoverage) { %>
+      <%if (!noCoverage) { %>
 
-			<dt>Coverage</dt>
-			<dd><%= coverage %></dd>
+      <dt>Coverage</dt>
+      <dd>
+        <%= coverage %>
+      </dd>
 
-			<% } %>
+      <% } %>
 
-			<%if (previousPeriod) { %>
+      <%if (inNewCodePeriod) { %>
 
-			<dt>Reference period </dt>
-			<dd><%= previousPeriod %></dd>
+      <dt>New Code Period </dt>
+      <dd>
+        <%= inNewCodePeriod %>
+      </dd>
 
-			<% } %>
-		</dl>
+      <% } %>
+    </dl>
 
-        <%if (qualityGateStatus) { %>
-        <h2>Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period?.date %> (<%= qualityGateStatus.projectStatus.period?.parameter %>)</h2>
+    <%if (qualityGateStatus) { %>
+    <h2>Quality Gate Status: <%= qualityGateStatus.projectStatus.status %> since <%= qualityGateStatusPeriodDate %></h2>
 
-          <table>
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Metric</th>
-                    <th>Value</th>
-                </tr>
-            </thead>
-            <tbody>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Metric</th>
+          <th>Value - Threshold</th>
+        </tr>
+      </thead>
+      <tbody>
 
-          <% for (const condition of qualityGateStatus.projectStatus.conditions) { %>
-            <tr>
-                <td style="background-color:<%- condition.status == 'OK' ? '#0a0' : '#d4333f' %>"></td>
-                <td><%= condition.metricKey %></td>
-                <td><%= condition.actualValue %> <%= condition.comparator == 'GT' ? '>' : '<' %> <%= condition.errorThreshold %></td>
-            </tr>
-          <% } %>
-
-          	</tbody>
-          </table>
+        <% for (const condition of qualityGateStatus.projectStatus.conditions) { %>
+        <tr>
+          <td style="background-color:<%- condition.status == 'OK' ? '#0a0' : '#d4333f' %>"></td>
+          <td>
+            <%= condition.metricKey %>
+          </td>
+          <td>
+            <%= condition.actualValue %>
+            <%= condition.comparator=='GT' ? '>' : '<' %>
+            <%= condition.errorThreshold %>
+          </td>
+        </tr>
         <% } %>
 
-		<h2>Summary of the Detected <%= vulnerabilityPluralPhrase %></h2>
-		<table>
-			<thead>
-				<tr>
-					<th></th>
-					<th>Severity</th>
-					<th>Number of Issues</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr>
-					<td class="sevBLOCKER"></td>
-					<td>BLOCKER</td>
-					<td><%= summary.blocker %></td>
-				</tr>
-				<tr>
-					<td class="sevCRITICAL"></td>
-					<td>CRITICAL</td>
-					<td><%= summary.critical %></td>
-				</tr>
-				<tr>
-					<td class="sevMAJOR"></td>
-					<td>MAJOR</td>
-					<td><%= summary.major %></td>
-				</tr>
-				<tr>
-					<td class="sevMINOR"></td>
-					<td>MINOR</td>
-					<td><%= summary.minor %></td>
-				</tr>
-			</tbody>
-		</table>
+      </tbody>
+    </table>
+    <% } %>
 
-		<%if (issues.length > 0) { %>
-		<canvas id="vulnerabilitiesPieChart" width="200" height="200"></canvas>
-		<% } %>
-	</div>
+    <h2>Summary of the Detected <%= vulnerabilityPluralPhrase %>
+    </h2>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Severity</th>
+          <th>Number of Issues</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="sevBLOCKER"></td>
+          <td>BLOCKER</td>
+          <td>
+            <%= summary.blocker %>
+          </td>
+        </tr>
+        <tr>
+          <td class="sevCRITICAL"></td>
+          <td>CRITICAL</td>
+          <td>
+            <%= summary.critical %>
+          </td>
+        </tr>
+        <tr>
+          <td class="sevMAJOR"></td>
+          <td>MAJOR</td>
+          <td>
+            <%= summary.major %>
+          </td>
+        </tr>
+        <tr>
+          <td class="sevMINOR"></td>
+          <td>MINOR</td>
+          <td>
+            <%= summary.minor %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-	<div class=detail>
-		<%if (issues.length > 0) { %>
-		<h2>Detail of the Detected <%= vulnerabilityPluralPhrase %></h2>
-		<table>
-			<thead>
-				<tr>
-					<th>Rule</th>
-					<th>Severity</th>
-					<th>Component</th>
-					<th>Line</th>
-					<th>Description</th>
-					<th>Message</th>
-					<th class="hidden">Key</th>
-					<th>Status</th>
-				</tr>
-			</thead>
-			<tbody>
-				<% for(var i = 0; i < issues.length; i++) { %>
-				<tr>
-					<td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
-					<td><%= issues[i].severity %></td>
-					<td class="component"><%= issues[i].component %></td>
-					<td><%= issues[i].line %></td>
-					<td><%= issues[i].description %></td>
-					<td><%= issues[i].message %></td>
-					<td class="hidden"><%= issues[i].key %></td>
-					<td><%- issues[i].link(issues[i].status) %></td>
-				</tr>
-				<% } %>
-			</tbody>
-		</table>
+    <%if (issues.length> 0) { %>
+    <canvas id="vulnerabilitiesPieChart" width="200" height="200"></canvas>
+    <% } %>
+  </div>
 
-		<% } %>
+  <div class=detail>
+    <%if (issues.length> 0) { %>
+    <h2>Detail of the Detected <%= vulnerabilityPluralPhrase %>
+    </h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Rule</th>
+          <th>Severity</th>
+          <th>Component</th>
+          <th>Line</th>
+          <th>Description</th>
+          <th>Message</th>
+          <th class="hidden">Key</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for(var i=0; i < issues.length; i++) { %>
+        <tr>
+          <td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>">
+              <%= issues[i].rule %>
+            </a></td>
+          <td>
+            <%= issues[i].severity %>
+          </td>
+          <td class="component">
+            <%= issues[i].component %>
+          </td>
+          <td>
+            <%= issues[i].line %>
+          </td>
+          <td>
+            <%= issues[i].description %>
+          </td>
+          <td>
+            <%= issues[i].message %>
+          </td>
+          <td class="hidden">
+            <%= issues[i].key %>
+          </td>
+          <td><%- issues[i].link(issues[i].status) %></td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
 
-		<%if (!noRulesInReport) { %>
-		<h3>Known Security Rules</h3>
-		<table class="rulestable">
-			<thead>
-				<tr>
-					<th>Rule</th>
-					<th>Description</th>
-				</tr>
-			</thead>
-			<tbody>
-				<% for (const [ruleKey, rule] of rules) { %>
-				<tr>
-					<td><a
-							href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>"><%= ruleKey %></a>
-					</td>
-					<td>
-						<details>
-							<%- rule.htmlDesc %>
-						</details>
-					</td>
-				</tr>
-				<% } %>
-			</tbody>
-		</table>
-		<% } %>
-	</div>
+    <% } %>
 
-	<%if (issues.length > 0) { %>
+    <%if (!noRulesInReport) { %>
+    <h3>Known Security Rules</h3>
+    <table class="rulestable">
+      <thead>
+        <tr>
+          <th>Rule</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const [ruleKey, rule] of rules) { %>
+        <tr>
+          <td><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
+              <%= ruleKey %>
+            </a>
+          </td>
+          <td>
+            <details>
+              <%- rule.htmlDesc %>
+            </details>
+          </td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+    <% } %>
+  </div>
 
-	<script>
-		var canvas = document.getElementById("vulnerabilitiesPieChart");
-		var ctx = canvas.getContext("2d");
+  <%if (issues.length> 0) { %>
 
-		var data = [
-			<%= summary.blocker %> ,
-			<%= summary.critical %> ,
-			<%= summary.major %> ,
-			<%= summary.minor %>
-		];
-		var total = data.reduce(function (sum, n) {
-			return sum + n;
-		})
-		var colors = ['#2c3e50', '#d43223', '#f39c12', '#319ddb'];
+  <script>
+    var canvas = document.getElementById("vulnerabilitiesPieChart");
+    var ctx = canvas.getContext("2d");
 
-		for (var i = 0, lastend = 0; i < data.length; i++) {
-			ctx.fillStyle = colors[i];
-			ctx.beginPath();
-			ctx.moveTo(canvas.width / 2, canvas.height / 2);
-			ctx.arc(canvas.width / 2, canvas.height / 2, canvas.height / 2, lastend, lastend + (Math.PI * 2 * (data[i] /
-				total)), false);
-			ctx.lineTo(canvas.width / 2, canvas.height / 2);
-			ctx.fill();
-			lastend += Math.PI * 2 * (data[i] / total);
-		}
-	</script>
+    var data = [
+      <%= summary.blocker %>,
+      <%= summary.critical %>,
+      <%= summary.major %>,
+      <%= summary.minor %>
+    ];
+    var total = data.reduce(function(sum, n) {
+      return sum + n;
+    })
+    var colors = ['#2c3e50', '#d43223', '#f39c12', '#319ddb'];
 
-	<% } %>
+    for (var i = 0, lastend = 0; i < data.length; i++) {
+      ctx.fillStyle = colors[i];
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, canvas.height / 2);
+      ctx.arc(canvas.width / 2, canvas.height / 2, canvas.height / 2, lastend, lastend + (Math.PI * 2 * (data[i] /
+        total)), false);
+      ctx.lineTo(canvas.width / 2, canvas.height / 2);
+      ctx.fill();
+      lastend += Math.PI * 2 * (data[i] / total);
+    }
+  </script>
+
+  <% } %>
 </body>
 
 </html>
