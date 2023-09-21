@@ -1,40 +1,34 @@
 SonarQube <%= vulnerabilityPhrase %> Report
 
-  Report Generated On <%= date %>
+Report Generated On <%= date %>
 
-    Project Name: <%= projectName %>
-      Application: <%= applicationName %>
-        Release: <%= releaseName %>
-          Branch: <%= branch %>
-            Delta analysis: <%= deltaAnalysis %>
-              <%_ if (inNewCodePeriod) { _%>
-                New Code Period: <%= inNewCodePeriod %>
-                  <%_ } _%>
-                    <%_ if (qualityGateStatus) { _%>
-                      Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%=
-                          qualityGateStatus.projectStatus.period?.date %> (<%=
-                            qualityGateStatus.projectStatus.period?.parameter %>)
+Project Name: <%= projectName %>
+Application: <%= applicationName %>
+Release: <%= releaseName %>
+Branch: <%= branch %>
+Delta analysis: <%= deltaAnalysis %>
+<%_ if (inNewCodePeriod) { _%>
+New Code Period: <%= inNewCodePeriod %>
+<%_ } _%>
+<%_ if (qualityGateStatus) { _%>
+Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period?.date %> (<%= qualityGateStatus.projectStatus.period?.parameter %>)<
 
-                            < <%_ for (const condition of qualityGateStatus.projectStatus.conditions) { _%> Metric: <%=
-                                condition.metricKey %>
-                                </td>
-                                Value: <%= condition.actualValue %>
-                                  <%= condition.comparator=='GT' ? '>' : '<' %>
-                                    <%= condition.errorThreshold %>
-                                      </td>
-                                      <%_ } _%>
-                                        <%_ } _%>
+  <%_ for (const condition of qualityGateStatus.projectStatus.conditions) { _%>
+Metric: <%= condition.metricKey %></td>
+Value: <%= condition.actualValue %> <%= condition.comparator == 'GT' ? '>' : '<' %> <%= condition.errorThreshold %></td>
+  <%_ } _%>
+<%_ } _%>
 
-                                          Summary of the Detected <%= vulnerabilityPluralPhrase %>
+Summary of the Detected <%= vulnerabilityPluralPhrase %>
 
-                                            Severity: BLOCKER
-                                            Number of Issues: <%= summary.blocker %>
+Severity: BLOCKER
+Number of Issues: <%= summary.blocker %>
 
-                                              Severity: CRITICAL
-                                              Number of Issues: <%= summary.critical %>
+Severity: CRITICAL
+Number of Issues: <%= summary.critical %>
 
-                                                Severity: MAJOR
-                                                Number of Issues: <%= summary.major %>
+Severity: MAJOR
+Number of Issues: <%= summary.major %>
 
-                                                  Severity: MINOR
-                                                  Number of Issues: <%= summary.minor %>
+Severity: MINOR
+Number of Issues: <%= summary.minor %>

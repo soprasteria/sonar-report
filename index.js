@@ -1,67 +1,148 @@
-import { existsSync } from "fs";
 import fs from "fs/promises";
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { Command } from 'commander';
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+import { Command } from "commander";
 import ejs from "ejs";
 import { getProxyForUrl } from "proxy-from-env";
 import got from "got";
 import hpagent from "hpagent";
-import { propertiesToJson } from "properties-file";
-import semver from 'semver';
-import { log } from "console";
-import { type } from "os";
+import { getProperties } from "properties-file";
+import semver from "semver";
+import { readFileSync, existsSync } from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const buildCommand = (command = new Command()) => command
-  .description('Generate a vulnerability report from a SonarQube instance.')
-  .addOption(command.createOption('--http-proxy', 'the proxy to use to reach the sonarqube instance (http://<host>:<port>)').env('http_proxy'))
-  .option('--project <project>', 'name of the project, displayed in the header of the generated report')
-  .option('--application <application>', 'name of the application, displayed in the header of the generated report')
-  .option('--release <release>', 'name of the release, displayed in the header of the generated report')
-  .option('--branch <branch>', 'Branch in Sonarqube that we want to get the issues for')
-  .option('--pullrequest <pr>', 'pull request ID in Sonarqube for which to get the issues/hotspots')
-  .option('--sonarurl <url>', 'base URL of the SonarQube instance to query from')
-  .option('--sonarcomponent <component>', 'id of the component to query from')
-  .option('--sonarusername <username>', 'auth username')
-  .option('--sonarpassword <password>', 'auth password')
-  .option('--sonartoken <token>', 'auth token')
-  .option('--sonarorganization <organization>', 'name of the sonarcloud.io organization')
-  .option('--in-new-code-period', 'flag to indicate if the reporting should be done using the new code definition (delta analysis).', false)
-  .option('--allbugs', 'flag to indicate if the report should contain all bugs, not only vulnerabilities.', false)
-  .option('--fix-missing-rule', 'Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true.', false)
-  .option('--no-security-hotspot', 'Set this flag for old versions of sonarQube without security hotspots (<7.3).', true)
-  .option('--coverage', 'Set this flag to include code coverage status in the report.', false)
-  .option('--link-issues', 'Set this flag to create links to Sonar from reported issues', false)
-  .option('--quality-gate-status', 'Set this flag to include quality gate status in the report.', false)
-  .option('--no-rules-in-report', 'Set this flag to omit "Known Security Rules" section from report.', true)
-  .option('--vulnerability-phrase <phrase>', "Set to override 'Vulnerability' phrase in the report.", 'Vulnerability')
-  .option('--vulnerability-plural-phrase <phrase>', "Set to override 'Vulnerabilities' phrase in the report. ", 'Vulnerabilities')
-  .option('--save-report-json <filename>', 'Save the report data in JSON format. Set to target file name', '')
-  .option('--sonar-properties-file <filename>', 'To use a sonar properties file.', 'sonar-project.properties')
-  .option('--stylesheet-file <filename>', 'CSS stylesheet file path. (default: provided stylesheet)')
-  .option('--ejs-file <filename>', 'EJS template file path. (default: built in template)', 'index.ejs')
-  .option('--no-ejs-file', 'Disable template file (print only the summary)')
-  .option('--output <filename>', 'Output report file path. (default: report.html)', 'report.html')
-  .option('--exit-code', 'Exit with non zero if issues were found')
-  .addHelpText('after', `
+const buildCommand = (command = new Command()) =>
+  command
+    .description("Generate a vulnerability report from a SonarQube instance.")
+    .addOption(
+      command
+        .createOption(
+          "--http-proxy",
+          "the proxy to use to reach the sonarqube instance (http://<host>:<port>)"
+        )
+        .env("http_proxy")
+    )
+    .option(
+      "--project <project>",
+      "name of the project, displayed in the header of the generated report"
+    )
+    .option(
+      "--application <application>",
+      "name of the application, displayed in the header of the generated report"
+    )
+    .option(
+      "--release <release>",
+      "name of the release, displayed in the header of the generated report"
+    )
+    .option(
+      "--branch <branch>",
+      "Branch in Sonarqube that we want to get the issues for"
+    )
+    .option(
+      "--pullrequest <pr>",
+      "pull request ID in Sonarqube for which to get the issues/hotspots"
+    )
+    .option(
+      "--sonarurl <url>",
+      "base URL of the SonarQube instance to query from"
+    )
+    .option("--sonarcomponent <component>", "id of the component to query from")
+    .option("--sonarusername <username>", "auth username")
+    .option("--sonarpassword <password>", "auth password")
+    .option("--sonartoken <token>", "auth token")
+    .option(
+      "--sonarorganization <organization>",
+      "name of the sonarcloud.io organization"
+    )
+    .option(
+      "--in-new-code-period",
+      "flag to indicate if the reporting should be done using the new code definition (delta analysis).",
+      false
+    )
+    .option(
+      "--allbugs",
+      "flag to indicate if the report should contain all bugs, not only vulnerabilities.",
+      false
+    )
+    .option(
+      "--fix-missing-rule",
+      "Extract rules without filtering on type (even if allbugs=false). Not useful if allbugs=true.",
+      false
+    )
+    .option(
+      "--no-security-hotspot",
+      "Set this flag for old versions of sonarQube without security hotspots (<7.3).",
+      true
+    )
+    .option(
+      "--coverage",
+      "Set this flag to include code coverage status in the report.",
+      false
+    )
+    .option(
+      "--link-issues",
+      "Set this flag to create links to Sonar from reported issues",
+      false
+    )
+    .option(
+      "--quality-gate-status",
+      "Set this flag to include quality gate status in the report.",
+      false
+    )
+    .option(
+      "--no-rules-in-report",
+      'Set this flag to omit "Known Security Rules" section from report.',
+      true
+    )
+    .option(
+      "--vulnerability-phrase <phrase>",
+      "Set to override 'Vulnerability' phrase in the report.",
+      "Vulnerability"
+    )
+    .option(
+      "--vulnerability-plural-phrase <phrase>",
+      "Set to override 'Vulnerabilities' phrase in the report. ",
+      "Vulnerabilities"
+    )
+    .option(
+      "--save-report-json <filename>",
+      "Save the report data in JSON format. Set to target file name",
+      ""
+    )
+    .option(
+      "--sonar-properties-file <filename>",
+      "To use a sonar properties file.",
+      "sonar-project.properties"
+    )
+    .option(
+      "--stylesheet-file <filename>",
+      "CSS stylesheet file path. (default: provided stylesheet)"
+    )
+    .option(
+      "--ejs-file <filename>",
+      "EJS template file path. (default: built in template)",
+      "index.ejs"
+    )
+    .option("--no-ejs-file", "Disable template file (print only the summary)")
+    .option(
+      "--output <filename>",
+      "Output report file path. (default: report.html)",
+      "report.html"
+    )
+    .option("--exit-code", "Exit with non zero if issues were found")
+    .addHelpText(
+      "after",
+      `
 Example
-  sonar-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --in-new-code-period > /tmp/sonar-report`);
+  sonar-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --in-new-code-period > /tmp/sonar-report`
+    );
 
-const generateReport = async options => {
+const generateReport = async (options) => {
   const { onError = () => process.exit(1) } = options;
   function logError(context, error) {
-    const {
-      code = '',
-      message = '',
-      response = {},
-    } = error;
-    const {
-      statusCode = '',
-      statusMessage = '',
-      body = '',
-    } = response;
+    const { code = "", message = "", response = {} } = error;
+    const { statusCode = "", statusMessage = "", body = "" } = response;
 
     console.error(
       "Error while %s : %s - %s - %s - %s - %s",
@@ -75,25 +156,25 @@ const generateReport = async options => {
     throw error;
   }
 
-  const issueLink =
-    options.linkIssues
-      ? (data, issue) => (c) =>
-        `<a href="${data.sonarBaseURL}/project/issues?${data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+  const issueLink = options.linkIssues
+    ? (data, issue) => (c) =>
+        `<a href="${data.sonarBaseURL}/project/issues?${
+          data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
         }id=${encodeURIComponent(
           data.sonarComponent
         )}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(
           issue.key
         )}">${c}</a>`
-      : (data, issue) => (c) => c;
+    : (data, issue) => (c) => c;
 
-  const hotspotLink =
-    options.linkIssues
-      ? (data, hotspot) => (c) =>
-        `<a href="${data.sonarBaseURL}/security_hotspots?${data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+  const hotspotLink = options.linkIssues
+    ? (data, hotspot) => (c) =>
+        `<a href="${data.sonarBaseURL}/security_hotspots?${
+          data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
         }id=${encodeURIComponent(
           data.sonarComponent
         )}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>`
-      : (data, hotspot) => (c) => c;
+    : () => (c) => c;
 
   let severity = new Map();
   severity.set("MINOR", 0);
@@ -104,13 +185,16 @@ const generateReport = async options => {
 
   let properties = [];
   try {
-    properties = propertiesToJson(
-      options.sonarPropertiesFile
-    );
-  } catch (e) { }
+    properties = getProperties(readFileSync(options.sonarPropertiesFile));
+  } catch (e) {}
 
   const data = {
-    date: new Date().toLocaleDateString('en-us', { weekday: "long", year: "numeric", month: "short", day: "numeric" }),
+    date: new Date().toLocaleDateString("en-us", {
+      weekday: "long",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }),
     projectName: options.project || properties["sonar.projectName"],
     applicationName: options.application,
     releaseName: options.release,
@@ -125,7 +209,9 @@ const generateReport = async options => {
     noCoverage: !options.coverage,
     vulnerabilityPluralPhrase: options.vulnerabilityPluralPhrase,
     // sonar URL without trailing /
-    sonarBaseURL: options.sonarurl ? options.sonarurl.replace(/\/$/, "") : properties["sonar.host.url"],
+    sonarBaseURL: options.sonarurl
+      ? options.sonarurl.replace(/\/$/, "")
+      : properties["sonar.host.url"],
     sonarComponent: options.sonarcomponent || properties["sonar.projectKey"],
     sonarOrganization: options.sonarorganization,
     rules: new Map(),
@@ -133,7 +219,9 @@ const generateReport = async options => {
     hotspotKeys: [],
   };
 
-  const newCodePeriodFilter = data.inNewCodePeriod ? "&inNewCodePeriod=true" : "";
+  const newCodePeriodFilter = data.inNewCodePeriod
+    ? "&inNewCodePeriod=true"
+    : "";
   data.deltaAnalysis = data.inNewCodePeriod ? "Yes" : "No";
   const sonarBaseURL = data.sonarBaseURL;
   const sonarComponent = data.sonarComponent;
@@ -206,7 +294,7 @@ const generateReport = async options => {
   let filterIssue = DEFAULT_ISSUES_FILTER;
   let filterHotspots = "";
   let filterProjectStatus = "";
-  let filterCoverage = ""
+  let filterCoverage = "";
 
   if (data.allBugs) {
     filterRule = "";
@@ -217,14 +305,14 @@ const generateReport = async options => {
     filterIssue = filterIssue + "&pullRequest=" + data.pullRequest;
     filterHotspots = filterHotspots + "&pullRequest=" + data.pullRequest;
     filterProjectStatus = "&pullRequest=" + data.pullRequest;
-    filterCoverage = "&pullRequest=" + data.pullRequest
+    filterCoverage = "&pullRequest=" + data.pullRequest;
   }
 
   if (data.branch) {
     filterIssue = filterIssue + "&branch=" + data.branch;
     filterHotspots = filterHotspots + "&branch=" + data.branch;
     filterProjectStatus = "&branch=" + data.branch;
-    filterCoverage = "&branch=" + data.branch
+    filterCoverage = "&branch=" + data.branch;
   }
 
   if (data.fixMissingRule) {
@@ -271,7 +359,8 @@ const generateReport = async options => {
       }
     );
     const json = JSON.parse(response.body);
-    data.inNewCodePeriod = json.newCodePeriods[0].type + " > " + json.newCodePeriods[0].value;
+    data.inNewCodePeriod =
+      json.newCodePeriods[0].type + " > " + json.newCodePeriods[0].value;
   }
 
   if (!data.noCoverage) {
@@ -306,19 +395,24 @@ const generateReport = async options => {
       const json = JSON.parse(response.body);
 
       // get date for quality gate status, day month year format
-      data.qualityGateStatusPeriodDate = new Date(json.projectStatus.period.date).toISOString().substring(0, 10)
+      data.qualityGateStatusPeriodDate = new Date(
+        json.projectStatus.period.date
+      )
+        .toISOString()
+        .substring(0, 10);
 
       if (json.projectStatus.conditions) {
         for (const condition of json.projectStatus.conditions) {
           condition.metricKey = condition.metricKey.replace(/_/g, " ");
           if (condition.metricKey != "new duplicated lines density") {
-            condition.actualValue = conditionValue.get(condition.actualValue)
-            condition.errorThreshold = conditionValue.get(condition.errorThreshold)
+            condition.actualValue = conditionValue.get(condition.actualValue);
+            condition.errorThreshold = conditionValue.get(
+              condition.errorThreshold
+            );
           } else {
-            condition.actualValue = condition.actualValue + "%"
-            condition.errorThreshold = condition.errorThreshold + "%"
+            condition.actualValue = condition.actualValue + "%";
+            condition.errorThreshold = condition.errorThreshold + "%";
           }
-
         }
       }
       data.qualityGateStatus = json;
@@ -440,7 +534,9 @@ const generateReport = async options => {
           nbResults = json.hotspots.length;
           data.hotspotKeys.push(...json.hotspots.map((hotspot) => hotspot.key));
         } catch (error) {
-          console.error(`${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`)
+          console.error(
+            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`
+          );
           logError("getting hotspots list", error);
           return null;
         }
@@ -505,14 +601,20 @@ const generateReport = async options => {
   }
 
   if (options.ejsFile) {
-    const stylesheetFile = (options.stylesheetFile || __dirname + "/style.css")
+    const stylesheetFile = options.stylesheetFile || __dirname + "/style.css";
     const stylesheet = await fs.readFile(stylesheetFile, "binary");
-    console.error('using stylesheet file: %s', stylesheetFile);
+    console.error("using stylesheet file: %s", stylesheetFile);
 
     const builtInEjs = resolve(__dirname, options.ejsFile);
-    const ejsFile = existsSync(builtInEjs) ? builtInEjs : resolve(options.ejsFile);
+    const ejsFile = existsSync(builtInEjs)
+      ? builtInEjs
+      : resolve(options.ejsFile);
 
-    const renderedFile = await ejs.renderFile(ejsFile, { ...data, stylesheet }, {});
+    const renderedFile = await ejs.renderFile(
+      ejsFile,
+      { ...data, stylesheet },
+      {}
+    );
     await fs.writeFile(options.output, renderedFile);
   }
   if (options.exitCode && data.issues.length > 0) {
