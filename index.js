@@ -148,7 +148,7 @@ const generateReport = async (options) => {
   function logError(context, error) {
     const { code = "", message = "", response = {} } = error;
     const { statusCode = "", statusMessage = "", body = "" } = response;
-
+ 
     console.error(
       "Error while %s : %s - %s - %s - %s - %s",
       context,
@@ -512,6 +512,8 @@ const generateReport = async (options) => {
               description: message,
               message: issue.message,
               key: issue.key,
+              //added issues type
+              type: issue.type,
             };
           })
         );
@@ -578,6 +580,7 @@ const generateReport = async (options) => {
             description: hotspot.rule ? hotspot.rule.name : "/",
             message: hotspot.message,
             key: hotspot.key,
+            type: "hotspot",
           });
         } catch (error) {
           logError("getting hotspots details", error);
@@ -590,17 +593,28 @@ const generateReport = async (options) => {
       return severity.get(b.severity) - severity.get(a.severity);
     });
 
+
+// gestione summary
+
     data.summary = {
-      blocker: data.issues.filter((issue) => issue.severity === "BLOCKER")
+      blocker: data.issues.filter((issue) => issue.severity === "BLOCKER" && issue.type === "hotspot")
         .length,
-      critical: data.issues.filter((issue) => issue.severity === "CRITICAL")
+      critical: data.issues.filter((issue) => issue.severity === "CRITICAL" && issue.type === "hotspot")
         .length,
-      major: data.issues.filter((issue) => issue.severity === "MAJOR").length,
-      minor: data.issues.filter((issue) => issue.severity === "MINOR").length,
+      major: data.issues.filter((issue) => issue.severity === "MAJOR"  && issue.type === "hotspot").length,
+      minor: data.issues.filter((issue) => issue.severity === "MINOR" && issue.type === "hotspot").length,
+
+      blockerBugs: data.issues.filter((issue) => issue.severity === "BLOCKER" && issue.type !="hotspot")
+      .length,
+    criticalBugs: data.issues.filter((issue) => issue.severity === "CRITICAL" && issue.type != "hotspot")
+      .length,
+    majorBugs: data.issues.filter((issue) => issue.severity === "MAJOR" && issue.type != "hotspot").length,
+    minorBugs: data.issues.filter((issue) => issue.severity === "MINOR" && issue.type != "hotspot").length,
     };
   }
 
   // Iterate over all rules and remove those that have no issues
+  
   if (!data.noRulesInReport && data.onlyDetectedRules) {
     for (let [key, value] of data.rules) {
       if (!data.issues.some((issue) => issue.rule === key)) {

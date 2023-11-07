@@ -1,3 +1,7 @@
+.info{
+    height: 50px;
+}
+
 pre,
 td,
 th {
@@ -11,6 +15,21 @@ thead {
     background: #EEE
 }
 
+.doubleSummary {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content:center;
+
+}
+
+.Summary {
+    margin-right: 5%;
+    margin-left: 5%;
+
+
+
+} 
 body {
     color: #333;
     font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
@@ -129,6 +148,8 @@ hr {
 
 .banner {
     text-align: center;
+    display: flex;
+    justify-content: space-evenly;
 }
 
 canvas {
