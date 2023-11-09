@@ -389,11 +389,11 @@
           <% if ( rule.type === 'SECURITY_HOTSPOT') { %>
 
         <tr>
-          <td><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
+          <td id="<%= ruleKey %>"><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
               <%= ruleKey %>
             </a>
           </td>
-          <td>
+          <td >
             <details>
               <%- rule.htmlDesc %>
             </details>
@@ -421,7 +421,8 @@
           <% if ( rule.type != 'SECURITY_HOTSPOT') { %>
 
         <tr>
-          <td><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
+          <td id="<%= ruleKey %>">
+            <a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
               <%= ruleKey %>
             </a>
           </td>
