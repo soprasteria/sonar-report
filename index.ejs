@@ -214,7 +214,7 @@
 </div>
 
 
-  <div class=detail>
+  <div class=detail name="hotspot">
     <%if (issues.length> 0) { %>
     <h2>Detail of the Detected Vulnerability
     </h2>
@@ -267,7 +267,7 @@
     <% } %>
   </div>
 
-  <div class=detail>
+  <div class=detail name="bugs">
     <%if (issues.length> 0) { %>
     <h2>Detail of the Detected Bugs
     </h2>
@@ -320,7 +320,7 @@
     <% } %>
   </div>
 
-  <div class=detail>
+  <div class=detail name="code smell">
     <%if (issues.length> 0) { %>
     <h2>Detail of the Detected Code Smell
     </h2>
@@ -369,9 +369,10 @@
         <% } %>
       </tbody>
     </table>
-
     <% } %>
   </div>
+
+
 
   <div class=detail>
     <%if (!noRulesInReport) { %>
@@ -385,17 +386,52 @@
       </thead>
       <tbody>
         <% for (const [ruleKey, rule] of rules) { %>
-        <tr id="<%= ruleKey %>" >
-          <td class="colored"><a target="_blank" href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
-          <h5><%= ruleKey %></h5> 
+          <% if ( rule.type === 'SECURITY_HOTSPOT') { %>
+
+        <tr>
+          <td><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
+              <%= ruleKey %>
             </a>
           </td>
-          <td class="info">
+          <td>
             <details>
               <%- rule.htmlDesc %>
             </details>
           </td>
         </tr>
+        <% } %>
+        <% } %>
+      </tbody>
+    </table>
+    <% } %>
+  </div>
+
+  <div class=detail>
+    <%if (!noRulesInReport) { %>
+    <h3>Known Quality Rules</h3>
+    <table class="rulestable">
+      <thead>
+        <tr>
+          <th>Rule</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const [ruleKey, rule] of rules) { %>
+          <% if ( rule.type != 'SECURITY_HOTSPOT') { %>
+
+        <tr>
+          <td><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
+              <%= ruleKey %>
+            </a>
+          </td>
+          <td>
+            <details>
+              <%- rule.htmlDesc %>
+            </details>
+          </td>
+        </tr>
+        <% } %>
         <% } %>
       </tbody>
     </table>

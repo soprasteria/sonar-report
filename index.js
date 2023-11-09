@@ -452,7 +452,7 @@ const generateReport = async (options) => {
         json.rules.forEach((r) =>
           data.rules.set(
             r.key,
-            (({ name, htmlDesc, severity }) => ({ name, htmlDesc, severity }))(
+            (({ name, htmlDesc, severity,type }) => ({ name, htmlDesc, severity,type}))(
               r
             )
           )
@@ -594,7 +594,7 @@ const generateReport = async (options) => {
     });
 
 
-// gestione summary
+// summary
 
     data.summary = {
       blocker: data.issues.filter((issue) => issue.severity === "BLOCKER" && issue.type === "hotspot")
@@ -620,8 +620,9 @@ const generateReport = async (options) => {
       if (!data.issues.some((issue) => issue.rule === key)) {
         data.rules.delete(key);
       }
+      }
     }
-  }
+  
 
   console.error(await ejs.renderFile(__dirname + "/summary.txt.ejs", data, {}));
 
