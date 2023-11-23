@@ -1,18 +1,18 @@
-# sonar-report
+# sonarqube-report
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=soprasteria_sonar-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=soprasteria_sonar-report)
-[![Build Status](https://travis-ci.org/soprasteria/sonar-report.svg?branch=master)](https://github.com/soprasteria/sonar-report)
+[![Build Status](https://travis-ci.org/soprasteria/sonarqube-report.svg?branch=master)](https://github.com/soprasteria/sonarqube-report)
 
-![tomcat screenshot example](screenshots/tomcat1.png "tomcat screenshot example")
+![screenshot example](screenshots/immagine(1).png "screenshot example")
 
-![tomcat screenshot example](screenshots/tomcat2.png "tomcat screenshot example")
+![screenshot example](screenshots/immagine(2).png "screenshot example")
 
 ## Install
 
 Compatible with node 14+
 
 ```bash
-$ npm install -g sonar-report
+$ npm install -g sonarqube-report
 ```
 
 ## Use
@@ -20,8 +20,8 @@ $ npm install -g sonar-report
 - See all options with:
 
 ```bash
-$ sonar-report -h
-Usage: sonar-report [options]
+$ sonarqube-report -h
+Usage: sonarqube-report [options]
 
 Generate a vulnerability report from a SonarQube instance.
 ```
@@ -37,18 +37,21 @@ Generate a vulnerability report from a SonarQube instance.
 
 ```bash
 # Generate report example
-sonar-report \
-  --sonarurl="https://sonarcloud.io" \
-  --sonarcomponent="soprasteria_sonar-report" \
-  --sonarorganization="sopra-steria" \
-  --project="Sonar Report" \
-  --application="sonar-report" \
-  --release="1.0.0" \
-  --branch="master" \
-  --output="samples/sonar-report_sonar-report.html"
-
-# Open in browser
-xdg-open samples/sonar-report_sonar-report.html
+sonarqube-report \
+  --project="my-project" \
+  --application="my-application" \
+  --release="1.0.1"  \
+  --coverage \
+  --link-issues  \
+  --sonarorganization="invitalia" \
+  --quality-gate-status  \
+  --sonarurl="https://sonarqube.invitalia.it/" \
+  --sonarcomponent="my-component" \
+  --allbugs \
+  --only-detected-rules  \
+  --sonartoken="$TOKEN"  \
+  --branch="main"  \
+  --output="./report.html"
 ```
 
 ## Migrate to v3
@@ -60,7 +63,7 @@ xdg-open samples/sonar-report_sonar-report.html
   Report Generated On Wed Aug 24 2022
 
   Project Name: Sonar Report
-  Application: sonar-report
+  Application: sonarqube-report
   Release: 1.0.0
   Delta analysis: No
 
@@ -83,7 +86,7 @@ xdg-open samples/sonar-report_sonar-report.html
 
 ### --since-leak-period
 
-The `--since-leak-period` parameter activates delta analysis. If `true`, sonar-report will only get the vulnerabilities that were added since a fixed date/version or for a number of days. For this it will:
+The `--since-leak-period` parameter activates delta analysis. If `true`, sonarqube-report will only get the vulnerabilities that were added since a fixed date/version or for a number of days. For this it will:
 
 - get `sonar.leak.period` value using sonar settings API.
 - filter accordingly when getting the issues using the issues API.
@@ -112,9 +115,14 @@ Beware that, with this parameter activated, all the issues linked to the rules d
 
 ### --no-security-hotspot
 
-Sonar-report will try to find how your sonarqube instance is working with hotspots depending on the running version. However in last resort, you can use the `--no-security-hotspot` flag in order to deactivate the hotspots processing.
+sonarqube-report will try to find how your sonarqube instance is working with hotspots depending on the running version. However in last resort, you can use the `--no-security-hotspot` flag in order to deactivate the hotspots processing.
 
 **Note that you may miss out on some vulnerabilities when using this option if your sonarqube instance does support hotspots.**
+
+### --only-detected-rules
+
+Enumerate only activated rules, referenced by detected vulnerabilities.
+
 
 General information about security hotspots: https://docs.sonarqube.org/latest/user-guide/security-hotspots/
 
@@ -157,7 +165,7 @@ Get the dependencies:
 npm install
 ```
 
-Run with the same command as [Use](#use) but use `node cli.js` instead of `sonar-report`
+Run with the same command as [Use](#use) but use `node cli.js` instead of `sonarqube-report`
 
 ## Troubleshooting
 

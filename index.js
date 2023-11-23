@@ -140,7 +140,7 @@ const buildCommand = (command = new Command()) =>
       "after",
       `
 Example
-  sonar-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --in-new-code-period > /tmp/sonar-report`
+  sonarqube-report --project=MyProject --application=MyApp --release=v1.0.0 --sonarurl=http://my.sonar.example.com --sonarcomponent=myapp:1.0.0 --in-new-code-period > /tmp/sonarqube-report`
     );
 
 const generateReport = async (options) => {

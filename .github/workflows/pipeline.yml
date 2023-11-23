@@ -13,7 +13,7 @@ jobs:
       - run: npm link
       - run: node --check .
       - run: npm test
-      - run: sonar-report
+      - run: sonarqube-report
           --sonarurl="https://sonarcloud.io"
           --sonarcomponent="soprasteria_sonar-report"
           --sonarorganization="sopra-steria"

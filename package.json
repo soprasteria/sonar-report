@@ -1,10 +1,10 @@
 {
-  "name": "sonar-report",
-  "version": "3.1.1",
+  "name": "sonarqube-report",
+  "version": "1.0.1",
   "main": "index.js",
-  "author": "SopraSteria",
+  "author": "Leonardo spa",
   "bin": {
-    "sonar-report": "./cli.js"
+    "sonarqube-report": "./cli.js"
   },
   "exports": "./index.js",
   "scripts": {
