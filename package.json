@@ -14,7 +14,7 @@
   "dependencies": {
     "commander": "^11.0.0",
     "ejs": "^3.1.9",
-    "got": "^11.8.5",
+    "got": "^14.0.0",
     "hpagent": "^1.2.0",
     "properties-file": "^3.2.21",
     "proxy-from-env": "^1.1.0",
