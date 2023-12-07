@@ -357,7 +357,8 @@ const generateReport = async (options) => {
   }
 
   if (data.inNewCodePeriod) {
-    const response = await got(
+    try {
+      const response = await got(
       `${sonarBaseURL}/api/new_code_periods/list?project=${sonarComponent}`,
       {
         agent,
@@ -367,10 +368,16 @@ const generateReport = async (options) => {
     const json = JSON.parse(response.body);
     data.inNewCodePeriod =
       json.newCodePeriods[0].type + " > " + json.newCodePeriods[0].value;
+    } catch (ex) {
+      console.error("Error while getting new code period")
+      console.error("ERROR:", ex.message)
+      return null;
+    }
   }
 
   if (!data.noCoverage) {
-    const response = await got(
+    try {
+      const response = await got(
       `${sonarBaseURL}/api/measures/component?component=${sonarComponent}&metricKeys=coverage${filterCoverage}`,
       {
         agent,
@@ -379,6 +386,11 @@ const generateReport = async (options) => {
     );
     const json = JSON.parse(response.body);
     data.coverage = json.component.measures[0]?.value || 0;
+    } catch (ex) {
+      console.error("Error while getting sonarcomponent", sonarComponent)
+      console.error("ERROR:", ex.message)
+      return null;
+    }
   }
 
   if (options.qualityGateStatus) {
