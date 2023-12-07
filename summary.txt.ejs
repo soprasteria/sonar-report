@@ -12,3 +12,10 @@ New Code Period: <%= inNewCodePeriod %>
 <%_ } _%>
 <%_ if (qualityGateStatus) { _%>
 Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period?.date %> (<%= qualityGateStatus.projectStatus.period?.parameter %>)<
+
+  <%_ for (const condition of qualityGateStatus.projectStatus.conditions) { _%>
+Metric: <%= condition.metricKey %></td>
+Value: <%= condition.actualValue %> <%= condition.comparator == 'GT' ? '>' : '<' %> <%= condition.errorThreshold %></td>
+  <%_ } _%>
+<%_ } _%>
+
