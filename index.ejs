@@ -78,7 +78,7 @@
 
         <% } %>
       </dl>
-    <%if (qualityGateStatus) { %>
+    <%if (qualityGateStatus && qualityGateStatusPeriodDate !== null) { %>
     <h2>Last Quality Gate Status: <%= qualityGateStatusPeriodDate %>
       <%if (qualityGateStatus.projectStatus.status == 'OK') { %>
       PASSED
@@ -113,6 +113,8 @@
         <% } %>
       </tbody>
     </table>
+    <% } else {%>
+      Perform another scan to retrieve Quality Gate metrics
     <% } %>
   </div>
 
