@@ -96,6 +96,11 @@ const buildCommand = (command = new Command()) =>
       true
     )
     .option(
+      "--only-detected-rules",
+      "Set this flag to include only detected rules in the report. Not useful if no-rules-in-report=true.",
+      false
+    )
+    .option(
       "--vulnerability-phrase <phrase>",
       "Set to override 'Vulnerability' phrase in the report.",
       "Vulnerability"
@@ -205,6 +210,7 @@ const generateReport = async (options) => {
     fixMissingRule: options.fixMissingRule,
     noSecurityHotspot: !options.securityHotspot,
     noRulesInReport: !options.rulesInReport,
+    onlyDetectedRules: options.onlyDetectedRules,
     vulnerabilityPhrase: options.vulnerabilityPhrase,
     noCoverage: !options.coverage,
     vulnerabilityPluralPhrase: options.vulnerabilityPluralPhrase,
@@ -592,6 +598,15 @@ const generateReport = async (options) => {
       major: data.issues.filter((issue) => issue.severity === "MAJOR").length,
       minor: data.issues.filter((issue) => issue.severity === "MINOR").length,
     };
+  }
+
+  // Iterate over all rules and remove those that have no issues
+  if (!data.noRulesInReport && data.onlyDetectedRules) {
+    for (let [key, value] of data.rules) {
+      if (!data.issues.some((issue) => issue.rule === key)) {
+        data.rules.delete(key);
+      }
+    }
   }
 
   console.error(await ejs.renderFile(__dirname + "/summary.txt.ejs", data, {}));
