@@ -523,7 +523,7 @@ const generateReport = async (options) => {
       do {
         try {
           const response = await got(
-            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`,
+            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&status=${HOTSPOT_STATUSES}`,
             {
               agent,
               headers,
@@ -535,7 +535,7 @@ const generateReport = async (options) => {
           data.hotspotKeys.push(...json.hotspots.map((hotspot) => hotspot.key));
         } catch (error) {
           console.error(
-            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&statuses=${HOTSPOT_STATUSES}`
+            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&status=${HOTSPOT_STATUSES}`
           );
           logError("getting hotspots list", error);
           return null;
