@@ -597,7 +597,20 @@ const generateReport = async (options) => {
   console.error(await ejs.renderFile(__dirname + "/summary.txt.ejs", data, {}));
 
   if (options.saveReportJson) {
-    await fs.writeFile(options.saveReportJson, JSON.stringify(data, null, 2));
+    const replacer = (key, value) => {
+      // JSON.stringify() not convert ES6 Map() to value, this replacer will apply for rules to add rules to json response.
+      // https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
+      if (key === "rules") {
+        return Array.from(value).reduce((obj, [key, value]) => {
+            obj[key] = value;
+            return obj;
+            }, {});
+      } else {
+        return value
+      }
+    }
+
+    await fs.writeFile(options.saveReportJson, JSON.stringify(data, replacer, 2));
   }
 
   if (options.ejsFile) {
