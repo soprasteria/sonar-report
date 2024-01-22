@@ -163,22 +163,20 @@ const generateReport = async (options) => {
 
   const issueLink = options.linkIssues
     ? (data, issue) => (c) =>
-        `<a href="${data.sonarBaseURL}/project/issues?${
-          data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
-        }id=${encodeURIComponent(
-          data.sonarComponent
-        )}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(
-          issue.key
-        )}">${c}</a>`
+      `<a href="${data.sonarBaseURL}/project/issues?${data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+      }id=${encodeURIComponent(
+        data.sonarComponent
+      )}&issues=${encodeURIComponent(issue.key)}&open=${encodeURIComponent(
+        issue.key
+      )}">${c}</a>`
     : (data, issue) => (c) => c;
 
   const hotspotLink = options.linkIssues
     ? (data, hotspot) => (c) =>
-        `<a href="${data.sonarBaseURL}/security_hotspots?${
-          data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
-        }id=${encodeURIComponent(
-          data.sonarComponent
-        )}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>`
+      `<a href="${data.sonarBaseURL}/security_hotspots?${data.branch ? "branch=" + encodeURIComponent(data.branch) + "&" : ""
+      }id=${encodeURIComponent(
+        data.sonarComponent
+      )}&hotspots=${encodeURIComponent(hotspot.key)}">${c}</a>`
     : () => (c) => c;
 
   let severity = new Map();
@@ -186,12 +184,12 @@ const generateReport = async (options) => {
   severity.set("MAJOR", 1);
   severity.set("CRITICAL", 2);
   severity.set("BLOCKER", 3);
-  let hotspotSeverities = { HIGH: "CRITICAL", MEDIUM: "MAJOR", LOW: "MINOR" };
+  let hotspotSeverities = { HIGH: "HIGH", MEDIUM: "MEDIUM", LOW: "LOW" };
 
   let properties = [];
   try {
     properties = getProperties(readFileSync(options.sonarPropertiesFile));
-  } catch (e) {}
+  } catch (e) { }
 
   const data = {
     date: new Date().toLocaleDateString("en-us", {
@@ -513,6 +511,7 @@ const generateReport = async (options) => {
             };
           })
         );
+
       } catch (error) {
         logError("getting issues", error);
         return null;
@@ -558,13 +557,15 @@ const generateReport = async (options) => {
           );
           const hotspot = JSON.parse(response.body);
           hSeverity = hotspotSeverities[hotspot.rule.vulnerabilityProbability];
+
           if (hSeverity === undefined) {
-            hSeverity = "MAJOR";
+            hSeverity = "MEDIUM";
             console.error(
               "Unknown hotspot severity: %s",
               hotspot.vulnerabilityProbability
             );
           }
+
           data.issues.push({
             rule: hotspot.rule.key,
             severity: hSeverity,
@@ -589,12 +590,10 @@ const generateReport = async (options) => {
     });
 
     data.summary = {
-      blocker: data.issues.filter((issue) => issue.severity === "BLOCKER")
+      high: data.issues.filter((issue) => (issue.severity === "HIGH" || issue.severity === "BLOCKER"))
         .length,
-      critical: data.issues.filter((issue) => issue.severity === "CRITICAL")
-        .length,
-      major: data.issues.filter((issue) => issue.severity === "MAJOR").length,
-      minor: data.issues.filter((issue) => issue.severity === "MINOR").length,
+      medium: data.issues.filter((issue) => issue.severity === "MEDIUM").length,
+      low: data.issues.filter((issue) => issue.severity === "LOW").length,
     };
   }
 
@@ -615,9 +614,9 @@ const generateReport = async (options) => {
       // https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
       if (key === "rules") {
         return Array.from(value).reduce((obj, [key, value]) => {
-            obj[key] = value;
-            return obj;
-            }, {});
+          obj[key] = value;
+          return obj;
+        }, {});
       } else {
         return value
       }
