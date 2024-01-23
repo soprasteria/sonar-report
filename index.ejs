@@ -174,7 +174,11 @@
               <%= issues[i].rule %>
             </a></td>
           <td>
+            <% if(issues[i].severity == "BLOCKER"){ %>
+            HIGH
+            <% } else{ %>
             <%= issues[i].severity %>
+            <% } %>
           </td>
           <td class="component">
             <%= issues[i].component %>
@@ -241,7 +245,7 @@
     var total = data.reduce(function(sum, n) {
       return sum + n;
     })
-    var colors = ['#2c3e50', '#d43223', '#f39c12', '#319ddb'];
+    var colors = ['#d43223', '#f39c12', '#319ddb'];
 
     for (var i = 0, lastend = 0; i < data.length; i++) {
       ctx.fillStyle = colors[i];

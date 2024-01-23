@@ -180,10 +180,10 @@ const generateReport = async (options) => {
     : () => (c) => c;
 
   let severity = new Map();
-  severity.set("LOW", 0);
-  severity.set("MEDIUM", 1);
-  severity.set("HIGH", 2);
-
+  severity.set("MINOR", 0);
+  severity.set("MAJOR", 1);
+  severity.set("CRITICAL", 2);
+  severity.set("BLOCKER", 3);
   let hotspotSeverities = { HIGH: "HIGH", MEDIUM: "MEDIUM", LOW: "LOW" };
 
   let properties = [];
@@ -513,6 +513,7 @@ const generateReport = async (options) => {
             };
           })
         );
+
       } catch (error) {
         logError("getting issues", error);
         return null;
@@ -558,13 +559,15 @@ const generateReport = async (options) => {
           );
           const hotspot = JSON.parse(response.body);
           hSeverity = hotspotSeverities[hotspot.rule.vulnerabilityProbability];
+
           if (hSeverity === undefined) {
-            hSeverity = "MAJOR";
+            hSeverity = "MEDIUM";
             console.error(
               "Unknown hotspot severity: %s",
               hotspot.vulnerabilityProbability
             );
           }
+
           data.issues.push({
             rule: hotspot.rule.key,
             severity: hSeverity,
@@ -589,7 +592,7 @@ const generateReport = async (options) => {
     });
 
     data.summary = {
-      high: data.issues.filter((issue) => issue.severity === "HIGH")
+      high: data.issues.filter((issue) => (issue.severity === "HIGH" || issue.severity === "BLOCKER"))
         .length,
       medium: data.issues.filter((issue) => issue.severity === "MEDIUM").length,
       low: data.issues.filter((issue) => issue.severity === "LOW").length,
