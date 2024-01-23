@@ -66,16 +66,13 @@ xdg-open samples/sonar-report_sonar-report.html
 
   Summary of the Detected Vulnerabilities
 
-  Severity: BLOCKER
+  Severity: HIGH
   Number of Issues: 0
 
-  Severity: CRITICAL
+  Severity: MEDIUM
   Number of Issues: 0
 
-  Severity: MAJOR
-  Number of Issues: 0
-
-  Severity: MINOR
+  Severity: LOW
   Number of Issues: 0
   ```
 
