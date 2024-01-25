@@ -401,11 +401,18 @@ const generateReport = async (options) => {
       const json = JSON.parse(response.body);
 
       // get date for quality gate status, day month year format
-      data.qualityGateStatusPeriodDate = new Date(
-        json.projectStatus.period.date
-      )
-        .toISOString()
-        .substring(0, 10);
+      let qualityGateStatusPeriodDate = json.projectStatus.period?.date;
+
+      if (!qualityGateStatusPeriodDate) {
+        qualityGateStatusPeriodDate =
+          json.projectStatus.periods.length > 0
+            ? json.projectStatus.periods[0].date
+            : undefined;
+      }
+
+      data.qualityGateStatusPeriodDate = qualityGateStatusPeriodDate
+        ? new Date(qualityGateStatusPeriodDate).toISOString().substring(0, 10)
+        : undefined;
 
       if (json.projectStatus.conditions) {
         for (const condition of json.projectStatus.conditions) {
