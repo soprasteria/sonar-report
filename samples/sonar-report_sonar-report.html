@@ -84,7 +84,7 @@ img {
     max-width: 100%
 }
 
-li + li {
+li+li {
     margin-top: 3px
 }
 
@@ -116,7 +116,7 @@ table {
     width: 100%
 }
 
-table + table {
+table+table {
     margin-top: 1em
 }
 
@@ -155,19 +155,15 @@ canvas {
     background-color: #d4333f
 }
 
-.sevBLOCKER {
-    background-color: #2c3e50
-}
-
-.sevCRITICAL {
+.sevHIGH {
     background-color: #d43223
 }
 
-.sevMAJOR {
+.sevMEDIUM {
     background-color: #f39c12
 }
 
-.sevMINOR {
+.sevLOW {
     background-color: #319ddb
 }
 
@@ -176,10 +172,9 @@ canvas {
 }
 
 .rulestable {
-    table-layout: fixed; word-wrap: break-word
+    table-layout: fixed;
+    word-wrap: break-word
 }
-
-
   </style>
 </head>
 
@@ -204,7 +199,9 @@ canvas {
 
       <dt>Project Name/URL</dt>
       <dd>
-        <a href="https://sonarcloud.io/dashboard?id=soprasteria_sonar-report" target="_blank">Sonar Report</a>
+        <a href="https://sonarcloud.io/dashboard?id=soprasteria_sonar-report" target="_blank">
+          Sonar Report
+        </a>
       </dd>
 
       <dt>Application</dt>
@@ -246,29 +243,22 @@ canvas {
       </thead>
       <tbody>
         <tr>
-          <td class="sevBLOCKER"></td>
-          <td>BLOCKER</td>
+          <td class="sevHIGH"></td>
+          <td>HIGH</td>
           <td>
             0
           </td>
         </tr>
         <tr>
-          <td class="sevCRITICAL"></td>
-          <td>CRITICAL</td>
+          <td class="sevMEDIUM"></td>
+          <td>MEDIUM</td>
           <td>
             0
           </td>
         </tr>
         <tr>
-          <td class="sevMAJOR"></td>
-          <td>MAJOR</td>
-          <td>
-            0
-          </td>
-        </tr>
-        <tr>
-          <td class="sevMINOR"></td>
-          <td>MINOR</td>
+          <td class="sevLOW"></td>
+          <td>LOW</td>
           <td>
             0
           </td>
@@ -42300,7 +42290,7 @@ END;
           </td>
           <td>
             <details>
-              <p>This rule is deprecated; use <a href='/organizations/sopra-steria/rules?open=plsql%3AS5547&rule_key=plsql%3AS5547'>S5547</a> instead.</p>
+              <p>This rule is deprecated; use <a href='/organizations/inditex-sonarcloud/rules?open=plsql%3AS5547&rule_key=plsql%3AS5547'>S5547</a> instead.</p>
 <h2>Why is this an issue?</h2>
 <p>According to the US National Institute of Standards and Technology (NIST), the Data Encryption Standard (DES) is no longer considered secure:</p>
 <blockquote>

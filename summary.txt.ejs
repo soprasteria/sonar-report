@@ -11,24 +11,20 @@ Delta analysis: <%= deltaAnalysis %>
 New Code Period: <%= inNewCodePeriod %>
 <%_ } _%>
 <%_ if (qualityGateStatus) { _%>
-Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period?.date %> (<%= qualityGateStatus.projectStatus.period?.parameter %>)<
+Quality gate status: <%= qualityGateStatus.projectStatus.status %> on <%= qualityGateStatus.projectStatus.period?.date %> (<%= qualityGateStatus.projectStatus.period?.parameter %>)
 
-  <%_ for (const condition of qualityGateStatus.projectStatus.conditions) { _%>
-Metric: <%= condition.metricKey %></td>
-Value: <%= condition.actualValue %> <%= condition.comparator == 'GT' ? '>' : '<' %> <%= condition.errorThreshold %></td>
+< <%_ for (const condition of qualityGateStatus.projectStatus.conditions) { _%> Metric: <%= condition.metricKey %></td>
+  Value: <%= condition.actualValue %> <%= condition.comparator == 'GT' ? '>' : '<' %> <%= condition.errorThreshold %></td>
   <%_ } _%>
-<%_ } _%>
+  <%_ } _%>
 
-Summary of the Detected <%= vulnerabilityPluralPhrase %>
+  Summary of the Detected <%= vulnerabilityPluralPhrase %>
 
-Severity: BLOCKER
-Number of Issues: <%= summary.blocker %>
+  Severity: HIGH
+  Number of Issues: <%= summary.high %>
 
-Severity: CRITICAL
-Number of Issues: <%= summary.critical %>
+  Severity: MEDIUM
+  Number of Issues: <%= summary.medium %>
 
-Severity: MAJOR
-Number of Issues: <%= summary.major %>
-
-Severity: MINOR
-Number of Issues: <%= summary.minor %>
+  Severity: LOW
+  Number of Issues: <%= summary.low %>
