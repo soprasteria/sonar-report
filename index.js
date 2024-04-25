@@ -402,10 +402,8 @@ const generateReport = async (options) => {
 
       // get date for quality gate status, day month year format
       data.qualityGateStatusPeriodDate = new Date(
-        json.projectStatus.period.date
-      )
-        .toISOString()
-        .substring(0, 10);
+        json.projectStatus.period?.date ?? (json.projectStatus.periods.length > 0 ? json.projectStatus.periods[0].date : undefined)
+      ).toISOString().substring(0, 10);
 
       if (json.projectStatus.conditions) {
         for (const condition of json.projectStatus.conditions) {
