@@ -399,9 +399,17 @@ const generateReport = async (options) => {
       const json = JSON.parse(response.body);
 
       // get date for quality gate status, day month year format
-      data.qualityGateStatusPeriodDate = new Date(
-        json.projectStatus.period?.date ?? (json.projectStatus.periods.length > 0 ? json.projectStatus.periods[0].date : undefined)
-      ).toISOString().substring(0, 10);
+      let periodDate = 'N/A';
+
+      if (json.projectStatus.period) {
+        periodDate = new Date(json.projectStatus.period.date).toISOString().substring(0, 10);
+      } else if (json.projectStatus.periods && json.projectStatus.periods.length > 0) {
+        periodDate = new Date(json.projectStatus.periods[0].date).toISOString().substring(0, 10);
+      }
+
+      data.qualityGateStatusPeriodDate = periodDate;
+
+
 
       if (json.projectStatus.conditions) {
         for (const condition of json.projectStatus.conditions) {
