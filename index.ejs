@@ -4,86 +4,128 @@
 <head>
   <meta charset="UTF-8">
   <title>SonarQube <%= vulnerabilityPhrase %> Report</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <style>
-    /*
-	The sss stylesheet is released under the MIT license.
-	<https://github.com/Thiht/sss>
-	*/
-    <%- stylesheet %>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h1, h2 {
+      margin-top: 20px;
+      color: #333;
+    }
+
+    .table {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .table thead th {
+      background-color: #f8f9fa;
+    }
+
+    .table tbody td {
+      vertical-align: middle;
+    }
+
+    .table .sevHIGH {
+      background-color: #d43223;
+    }
+
+    .table .sevMEDIUM {
+      background-color: #f39c12;
+    }
+
+    .table .sevLOW {
+      background-color: #319ddb;
+    }
+
+    .summary-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 20px;
+    }
+
+    .summary-table {
+      flex: 1;
+      margin-right: 20px;
+    }
+
+    .pie-chart-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .divider {
+      height: 2px;
+      background-color: #ddd;
+      margin: 20px 0;
+    }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 
 <body>
-  <div class="summup">
-    <!-- insert your company banner here -->
-    <!--
-		<p class="banner">
-			<a href="https://www.soprasteria.com/" target="_blank">
-				<img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/02/Sopra_Steria_logo.svg/1280px-Sopra_Steria_logo.svg.png" alt="Sopra Steria" height="50">
-			</a>
-		</p>
-		-->
+  <div class="container">
+    <div class="text-center mb-4">
+      <!-- insert your company banner here -->
+      <!--
+      <p class="banner">
+        <a href="https://www.soprasteria.com/" target="_blank">
+          <img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/02/Sopra_Steria_logo.svg/1280px-Sopra_Steria_logo.svg.png" alt="Sopra Steria" height="50">
+        </a>
+      </p>
+      -->
+      <h1>SonarQube <%= vulnerabilityPhrase %> Report</h1>
+    </div>
 
-    <h1>SonarQube <%= vulnerabilityPhrase %> Report</h1>
+    <dl class="row">
+      <dt class="col-sm-3">Report Generated On</dt>
+      <dd class="col-sm-9"><%= date %></dd>
 
-    <dl>
-      <dt>Report Generated On</dt>
-      <dd>
-        <%= date %>
-      </dd>
-
-      <dt>Project Name/URL</dt>
-      <dd>
+      <dt class="col-sm-3">Project Name/URL</dt>
+      <dd class="col-sm-9">
         <a href="<%= sonarBaseURL %>/dashboard?id=<%= sonarComponent %>" target="_blank">
           <%= projectName %>
         </a>
       </dd>
 
-      <dt>Application</dt>
-      <dd>
-        <%= applicationName %>
-      </dd>
+      <dt class="col-sm-3">Application</dt>
+      <dd class="col-sm-9"><%= applicationName %></dd>
 
-      <dt>Release</dt>
-      <dd>
-        <%= releaseName %>
-      </dd>
+      <dt class="col-sm-3">Release</dt>
+      <dd class="col-sm-9"><%= releaseName %></dd>
 
-      <dt>Branch</dt>
-      <dd>
-        <%= branch %>
-      </dd>
+      <dt class="col-sm-3">Branch</dt>
+      <dd class="col-sm-9"><%= branch %></dd>
 
-      <dt>Delta Analysis</dt>
-      <dd>
-        <%= deltaAnalysis %>
-      </dd>
+      <dt class="col-sm-3">Delta Analysis</dt>
+      <dd class="col-sm-9"><%= deltaAnalysis %></dd>
 
-      <%if (!noCoverage) { %>
-
-      <dt>Coverage</dt>
-      <dd>
-        <%= coverage %>
-      </dd>
-
+      <% if (!noCoverage) { %>
+      <dt class="col-sm-3">Coverage</dt>
+      <dd class="col-sm-9"><%= coverage %></dd>
       <% } %>
 
-      <%if (inNewCodePeriod) { %>
-
-      <dt>New Code Period </dt>
-      <dd>
-        <%= inNewCodePeriod %>
-      </dd>
-
+      <% if (inNewCodePeriod) { %>
+      <dt class="col-sm-3">New Code Period</dt>
+      <dd class="col-sm-9"><%= inNewCodePeriod %></dd>
       <% } %>
     </dl>
 
-    <%if (qualityGateStatus) { %>
-    <h2>Quality Gate Status: <%= qualityGateStatus.projectStatus.status %> since <%= qualityGateStatusPeriodDate %>
-    </h2>
+    <div class="divider"></div>
 
-    <table>
-      <thead>
+    <% if (qualityGateStatus) { %>
+    <h2 class="text-center">Quality Gate Status: <%= qualityGateStatus.projectStatus.status %> since <%= qualityGateStatusPeriodDate %></h2>
+    <table class="table table-bordered table-striped">
+      <thead class="thead-light">
         <tr>
           <th></th>
           <th>Metric</th>
@@ -91,71 +133,62 @@
         </tr>
       </thead>
       <tbody>
-
         <% for (const condition of qualityGateStatus.projectStatus.conditions) { %>
         <tr>
-          <td style="background-color:<%- condition.status == 'OK' ? '#0a0' : '#d4333f' %>"></td>
+          <td style="background-color:<%- condition.status == 'OK' ? '#28a745' : '#dc3545' %>"></td>
+          <td><%= condition.metricKey %></td>
           <td>
-            <%= condition.metricKey %>
-          </td>
-          <td>
-            <%= condition.actualValue %>
-            <%= condition.comparator=='GT' ? '>' : '<' %>
-            <%= condition.errorThreshold %>
+            <%= condition.actualValue %> <%= condition.comparator=='GT' ? '>' : '<' %> <%= condition.errorThreshold %>
           </td>
         </tr>
         <% } %>
-
       </tbody>
     </table>
     <% } %>
 
-    <h2>Summary of the Detected <%= vulnerabilityPluralPhrase %>
-    </h2>
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Severity</th>
-          <th>Number of Issues</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="sevHIGH"></td>
-          <td>HIGH</td>
-          <td>
-            <%= summary.high %>
-          </td>
-        </tr>
-        <tr>
-          <td class="sevMEDIUM"></td>
-          <td>MEDIUM</td>
-          <td>
-            <%= summary.medium %>
-          </td>
-        </tr>
-        <tr>
-          <td class="sevLOW"></td>
-          <td>LOW</td>
-          <td>
-            <%= summary.low %>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="divider"></div>
 
-    <%if (issues.length> 0) { %>
-    <canvas id="vulnerabilitiesPieChart" width="200" height="200"></canvas>
-    <% } %>
-  </div>
+    <h2 class="text-center">Summary of the Detected <%= vulnerabilityPluralPhrase %></h2>
+    <div class="summary-section">
+      <table class="table table-bordered table-striped summary-table">
+        <thead class="thead-light">
+          <tr>
+            <th></th>
+            <th>Severity</th>
+            <th>Number of Issues</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="sevHIGH"></td>
+            <td>HIGH</td>
+            <td><%= summary.high %></td>
+          </tr>
+          <tr>
+            <td class="sevMEDIUM"></td>
+            <td>MEDIUM</td>
+            <td><%= summary.medium %></td>
+          </tr>
+          <tr>
+            <td class="sevLOW"></td>
+            <td>LOW</td>
+            <td><%= summary.low %></td>
+          </tr>
+        </tbody>
+      </table>
+      <% if (issues.length > 0) { %>
+      <div class="pie-chart-container">
+        <canvas id="vulnerabilitiesPieChart" width="200" height="200"></canvas>
+      </div>
+      <% } %>
+    </div>
 
-  <div class=detail>
-    <%if (issues.length> 0) { %>
-    <h2>Detail of the Detected <%= vulnerabilityPluralPhrase %>
-    </h2>
-    <table>
-      <thead>
+    <div class="divider"></div>
+
+    <% if (issues.length > 0) { %>
+    <h2 class="text-center">Detail of the Detected <%= vulnerabilityPluralPhrase %></h2>
+    <table class="table table-bordered table-striped">
+      <thead class="thead-light">
         <tr>
           <th>Rule</th>
           <th>Severity</th>
@@ -168,45 +201,28 @@
         </tr>
       </thead>
       <tbody>
-        <% for(var i=0; i < issues.length; i++) { %>
+        <% for (var i = 0; i < issues.length; i++) { %>
         <tr>
-          <td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>">
-              <%= issues[i].rule %>
-            </a></td>
-          <td>
-            <% if(issues[i].severity == "BLOCKER"){ %>
-            HIGH
-            <% } else{ %>
-            <%= issues[i].severity %>
-            <% } %>
-          </td>
-          <td class="component">
-            <%= issues[i].component %>
-          </td>
-          <td>
-            <%= issues[i].line %>
-          </td>
-          <td>
-            <%= issues[i].description %>
-          </td>
-          <td>
-            <%= issues[i].message %>
-          </td>
-          <td class="hidden">
-            <%= issues[i].key %>
-          </td>
+          <td><a href="<%= sonarBaseURL %>/coding_rules#rule_key=<%= issues[i].rule %>"><%= issues[i].rule %></a></td>
+          <td><%= issues[i].severity == "BLOCKER" ? "HIGH" : issues[i].severity %></td>
+          <td class="component"><%= issues[i].component %></td>
+          <td><%= issues[i].line %></td>
+          <td><%= issues[i].description %></td>
+          <td><%= issues[i].message %></td>
+          <td class="hidden"><%= issues[i].key %></td>
           <td><%- issues[i].link(issues[i].status) %></td>
         </tr>
         <% } %>
       </tbody>
     </table>
-
     <% } %>
 
-    <%if (!noRulesInReport) { %>
-    <h3>Known Security Rules</h3>
-    <table class="rulestable">
-      <thead>
+    <div class="divider"></div>
+
+    <% if (!noRulesInReport) { %>
+    <h3 class="text-center">Known Security Rules</h3>
+    <table class="table table-bordered table-striped rulestable">
+      <thead class="thead-light">
         <tr>
           <th>Rule</th>
           <th>Description</th>
@@ -215,10 +231,7 @@
       <tbody>
         <% for (const [ruleKey, rule] of rules) { %>
         <tr>
-          <td><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>">
-              <%= ruleKey %>
-            </a>
-          </td>
+          <td><a href="https://next.sonarqube.com/sonarqube/coding_rules#rule_key=<%= ruleKey %>"><%= ruleKey %></a></td>
           <td>
             <details>
               <%- rule.htmlDesc %>
@@ -231,34 +244,29 @@
     <% } %>
   </div>
 
-  <%if (issues.length> 0) { %>
-
+  <% if (issues.length > 0) { %>
   <script>
     var canvas = document.getElementById("vulnerabilitiesPieChart");
     var ctx = canvas.getContext("2d");
 
-    var data = [
-      <%= summary.high %>,
-      <%= summary.medium %>,
-      <%= summary.low %>
-    ];
-    var total = data.reduce(function(sum, n) {
-      return sum + n;
-    })
+    var data = [<%= summary.high %>, <%= summary.medium %>, <%= summary.low %>];
+    var total = data.reduce(function (sum, n) { return sum + n; });
     var colors = ['#d43223', '#f39c12', '#319ddb'];
+    var labels = ['High', 'Medium', 'Low'];
 
     for (var i = 0, lastend = 0; i < data.length; i++) {
       ctx.fillStyle = colors[i];
       ctx.beginPath();
       ctx.moveTo(canvas.width / 2, canvas.height / 2);
-      ctx.arc(canvas.width / 2, canvas.height / 2, canvas.height / 2, lastend, lastend + (Math.PI * 2 * (data[i] /
-        total)), false);
+      ctx.arc(canvas.width / 2, canvas.height / 2, canvas.height / 2, lastend, lastend + (Math.PI * 2 * (data[i] / total)), false);
       ctx.lineTo(canvas.width / 2, canvas.height / 2);
       ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText(labels[i], canvas.width / 2 + (canvas.height / 4) * Math.cos(lastend + Math.PI * (data[i] / total)), canvas.height / 2 + (canvas.height / 4) * Math.sin(lastend + Math.PI * (data[i] / total)));
       lastend += Math.PI * 2 * (data[i] / total);
     }
   </script>
-
   <% } %>
 </body>
 
