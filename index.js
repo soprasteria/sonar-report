@@ -61,6 +61,14 @@ const buildCommand = (command = new Command()) =>
       false
     )
     .option(
+      "--created-after <date>",
+      "date in yyyy-mm-dd format for filtering issues after period"
+    )
+    .option(
+      "--created-before <date>",
+      "date in yyyy-mm-dd format for filtering issues before period"
+    )
+    .option(
       "--allbugs",
       "flag to indicate if the report should contain all bugs, not only vulnerabilities.",
       false
@@ -231,6 +239,12 @@ const generateReport = async (options) => {
   const sonarComponent = data.sonarComponent;
   const withOrganization = data.sonarOrganization
     ? `&organization=${data.sonarOrganization}`
+    : "";
+  const withCreatedAfter = options.createdAfter
+    ? `&createdAfter=${options.createdAfter}`
+    : "";
+  const withCreatedBefore = options.createdBefore
+    ? `&createdBefore=${options.createdBefore}`
     : "";
   let headers = {};
   let version = null;
@@ -487,7 +501,7 @@ const generateReport = async (options) => {
     do {
       try {
         const response = await got(
-          `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${newCodePeriodFilter}${filterIssue}${withOrganization}`,
+          `${sonarBaseURL}/api/issues/search?componentKeys=${sonarComponent}&ps=${pageSize}&p=${page}&statuses=${ISSUE_STATUSES}&resolutions=&s=STATUS&asc=no${newCodePeriodFilter}${filterIssue}${withOrganization}${withCreatedAfter}${withCreatedBefore}`,
           {
             agent,
             headers,
@@ -534,7 +548,7 @@ const generateReport = async (options) => {
       do {
         try {
           const response = await got(
-            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&status=${HOTSPOT_STATUSES}`,
+            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}${withCreatedAfter}${withCreatedBefore}&ps=${pageSize}&p=${page}&status=${HOTSPOT_STATUSES}`,
             {
               agent,
               headers,
@@ -546,7 +560,7 @@ const generateReport = async (options) => {
           data.hotspotKeys.push(...json.hotspots.map((hotspot) => hotspot.key));
         } catch (error) {
           console.error(
-            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}&ps=${pageSize}&p=${page}&status=${HOTSPOT_STATUSES}`
+            `${sonarBaseURL}/api/hotspots/search?projectKey=${sonarComponent}${filterHotspots}${newCodePeriodFilter}${withOrganization}${withCreatedAfter}${withCreatedBefore}&ps=${pageSize}&p=${page}&status=${HOTSPOT_STATUSES}`
           );
           logError("getting hotspots list", error);
           return null;
@@ -598,10 +612,10 @@ const generateReport = async (options) => {
     });
 
     data.summary = {
-      high: data.issues.filter((issue) => (issue.severity === "HIGH" || issue.severity === "BLOCKER"))
+      high: data.issues.filter((issue) => (issue.severity === "HIGH" || issue.severity === "CRITICAL" || issue.severity === "BLOCKER"))
         .length,
-      medium: data.issues.filter((issue) => issue.severity === "MEDIUM").length,
-      low: data.issues.filter((issue) => issue.severity === "LOW").length,
+      medium: data.issues.filter((issue) => issue.severity === "MEDIUM" || issue.severity === "MAJOR").length,
+      low: data.issues.filter((issue) => issue.severity === "LOW" || issue.severity === "MINOR").length,
     };
   }
 
